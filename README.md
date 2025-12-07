@@ -57,7 +57,7 @@ Projeyi yerel ortamınızda çalıştırmak için:
 
 ```bash
 # Repoyu klonlayın
-git clone [https://github.com/melihdemirdev/FinancialAI.git](https://github.com/melihdemirdev/FinancialAI.git)
+git clone https://github.com/melihdemirdev/FinancialAI.git
 
 # Klasöre girin
 cd FinancialAI
@@ -68,3 +68,4 @@ npm install
 # Uygulamayı başlatın
 
 npx expo start
+
