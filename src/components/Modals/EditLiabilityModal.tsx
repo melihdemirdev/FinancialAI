@@ -1,0 +1,440 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { X, CreditCard, TrendingDown, Check, Calendar, User } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
+import { gradients } from '../../theme/colors';
+import { Liability } from '../../types';
+
+interface EditLiabilityModalProps {
+  visible: boolean;
+  onClose: () => void;
+  liability: Liability | null;
+  onUpdate: (id: string, updatedLiability: Partial<Liability>) => void;
+}
+
+export const EditLiabilityModal: React.FC<EditLiabilityModalProps> = ({ visible, onClose, liability, onUpdate }) => {
+  const { colors } = useTheme();
+  const [type, setType] = useState<'credit_card' | 'personal_debt'>('credit_card');
+  const [name, setName] = useState('');
+  const [totalLimit, setTotalLimit] = useState('');
+  const [currentDebt, setCurrentDebt] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [debtorName, setDebtorName] = useState('');
+  const [details, setDetails] = useState('');
+
+  // Populate form when liability changes
+  useEffect(() => {
+    if (liability) {
+      setType(liability.type);
+      setName(liability.name);
+      setTotalLimit(liability.totalLimit ? liability.totalLimit.toString() : '');
+      setCurrentDebt(liability.currentDebt.toString());
+      setDueDate(liability.dueDate || '');
+      setDebtorName(liability.debtorName || '');
+      setDetails(liability.details || '');
+    } else {
+      resetForm();
+    }
+  }, [liability]);
+
+  const resetForm = () => {
+    setType('credit_card');
+    setName('');
+    setTotalLimit('');
+    setCurrentDebt('');
+    setDueDate('');
+    setDebtorName('');
+    setDetails('');
+  };
+
+  const handleUpdate = () => {
+    if (!liability || !name.trim() || !currentDebt.trim()) {
+      return;
+    }
+
+    onUpdate(liability.id, {
+      type,
+      name: name.trim(),
+      totalLimit: type === 'credit_card' && totalLimit ? parseFloat(totalLimit) : undefined,
+      currentDebt: parseFloat(currentDebt) || 0,
+      dueDate: type === 'credit_card' && dueDate ? dueDate.trim() : undefined,
+      debtorName: type === 'personal_debt' && debtorName ? debtorName.trim() : undefined,
+      details: details.trim() || undefined,
+    });
+
+    resetForm();
+    onClose();
+  };
+
+  if (!liability) {
+    return null;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <LinearGradient
+              colors={['#ff4757', '#ff6348']}
+              style={styles.headerGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.headerContent}>
+                <View style={styles.headerIcon}>
+                  <TrendingDown size={28} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+                <Text style={styles.modalTitle}>Borç Düzenle</Text>
+              </View>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <X size={24} color="#FFFFFF" strokeWidth={2.5} />
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+
+          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+            {/* Liability Type */}
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: colors.text.primary }]}>Borç Tipi</Text>
+              <View style={styles.typeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    {
+                      backgroundColor: type === 'credit_card' ? 'rgba(255, 71, 87, 0.15)' : colors.background,
+                      borderColor: type === 'credit_card' ? '#ff4757' : colors.border.secondary,
+                    },
+                  ]}
+                  onPress={() => setType('credit_card')}
+                >
+                  {type === 'credit_card' && (
+                    <View style={styles.checkIcon}>
+                      <Check size={16} color="#ff4757" strokeWidth={3} />
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      { color: type === 'credit_card' ? '#ff4757' : colors.text.primary },
+                    ]}
+                  >
+                    Kredi Kartı
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    {
+                      backgroundColor: type === 'personal_debt' ? 'rgba(255, 71, 87, 0.15)' : colors.background,
+                      borderColor: type === 'personal_debt' ? '#ff4757' : colors.border.secondary,
+                    },
+                  ]}
+                  onPress={() => setType('personal_debt')}
+                >
+                  {type === 'personal_debt' && (
+                    <View style={styles.checkIcon}>
+                      <Check size={16} color="#ff4757" strokeWidth={3} />
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      { color: type === 'personal_debt' ? '#ff4757' : colors.text.primary },
+                    ]}
+                  >
+                    Şahıs Borcu
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Name */}
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: colors.text.primary }]}>İsim</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+                <CreditCard size={20} color={colors.text.tertiary} strokeWidth={2} />
+                <TextInput
+                  style={[styles.input, { color: colors.text.primary }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={type === 'credit_card' ? 'Örn: X Bank Kartı' : 'Örn: Araç Kredisi'}
+                  placeholderTextColor={colors.text.tertiary}
+                />
+              </View>
+            </View>
+
+            {/* Current Debt */}
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: colors.text.primary }]}>Güncel Borç</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.text.primary }]}
+                  value={currentDebt}
+                  onChangeText={setCurrentDebt}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            {type === 'credit_card' && (
+              <>
+                {/* Total Limit */}
+                <View style={styles.section}>
+                  <Text style={[styles.label, { color: colors.text.primary }]}>Toplam Limit</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                    <TextInput
+                      style={[styles.input, { color: colors.text.primary }]}
+                      value={totalLimit}
+                      onChangeText={setTotalLimit}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.text.tertiary}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                </View>
+
+                {/* Due Date */}
+                <View style={styles.section}>
+                  <Text style={[styles.label, { color: colors.text.primary }]}>Kesim Tarihi</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+                    <Calendar size={20} color={colors.text.tertiary} strokeWidth={2} />
+                    <TextInput
+                      style={[styles.input, { color: colors.text.primary }]}
+                      value={dueDate}
+                      onChangeText={setDueDate}
+                      placeholder="Örn: 15/01/2025"
+                      placeholderTextColor={colors.text.tertiary}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {type === 'personal_debt' && (
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text.primary }]}>Borç Veren</Text>
+                <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+                  <User size={20} color={colors.text.tertiary} strokeWidth={2} />
+                  <TextInput
+                    style={[styles.input, { color: colors.text.primary }]}
+                    value={debtorName}
+                    onChangeText={setDebtorName}
+                    placeholder="Örn: Ahmet Yılmaz"
+                    placeholderTextColor={colors.text.tertiary}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Details */}
+            <View style={styles.section}>
+              <Text style={[styles.label, { color: colors.text.primary }]}>Detaylar (Opsiyonel)</Text>
+              <View style={[styles.inputContainer, styles.textAreaContainer, { backgroundColor: colors.background }]}>
+                <TextInput
+                  style={[styles.input, styles.textArea, { color: colors.text.primary }]}
+                  value={details}
+                  onChangeText={setDetails}
+                  placeholder="Ek bilgiler..."
+                  placeholderTextColor={colors.text.tertiary}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Update Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.updateButton}
+              onPress={handleUpdate}
+              disabled={!name.trim() || !currentDebt.trim()}
+            >
+              <LinearGradient
+                colors={!name.trim() || !currentDebt.trim() ? ['#666', '#666'] : ['#ff4757', '#ff6348']}
+                style={styles.updateButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.updateButtonText}>Güncelle</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    maxHeight: '92%',
+    overflow: 'hidden',
+  },
+
+  // Header Styles
+  headerContainer: {
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Form Styles
+  form: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 12,
+    letterSpacing: -0.2,
+  },
+
+  // Type Selection
+  typeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkIcon: {
+    marginRight: 6,
+  },
+  typeButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+
+  // Input Styles
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    gap: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 12,
+    fontWeight: '600',
+  },
+  currencyPrefix: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  textAreaContainer: {
+    paddingVertical: 12,
+    alignItems: 'flex-start',
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+    paddingTop: 0,
+  },
+
+  // Button Styles
+  buttonContainer: {
+    padding: 24,
+    paddingBottom: 32,
+  },
+  updateButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#ff4757',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  updateButtonGradient: {
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+});
