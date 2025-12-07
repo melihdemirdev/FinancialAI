@@ -98,8 +98,9 @@ export const useFinanceStore = create<FinanceStore>()(
         const liquidAssets = get().assets
           .filter(a => a.type === 'liquid')
           .reduce((total, item) => total + (Number(item.value) || 0), 0);
+        const totalAssets = get().getTotalAssets(); 
         const totalDebt = get().getTotalLiabilities();
-        return liquidAssets - totalDebt;
+        return totalAssets - totalDebt;
       }
     }),
     {
