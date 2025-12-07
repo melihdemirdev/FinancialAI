@@ -85,7 +85,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
                 </View>
                 <Text style={[styles.infoLabel, { color: colors.text.secondary }]}>Geliştirici</Text>
               </View>
-              <Text style={[styles.infoValue, { color: colors.text.primary }]}>Financial AI Team</Text>
+              <Text style={[styles.infoValue, { color: colors.text.primary }]}>Melih Can Demir</Text>
             </View>
 
             <View style={[styles.divider, { backgroundColor: colors.border.secondary }]} />
@@ -97,7 +97,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
                 </View>
                 <Text style={[styles.infoLabel, { color: colors.text.secondary }]}>Lisans</Text>
               </View>
-              <Text style={[styles.infoValue, { color: colors.text.primary }]}>GPL-3.0</Text>
+              <Text style={[styles.infoValue, { color: colors.text.primary }]}>MIT</Text>
             </View>
           </View>
         </View>
@@ -108,7 +108,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
 
           <TouchableOpacity
             style={[styles.linkButton, { backgroundColor: colors.cardBackground }]}
-            onPress={() => openLink('https://github.com/financialai')}
+            onPress={() => openLink('https://github.com/melihdemirdev/FinancialAI')}
           >
             <View style={styles.linkButtonContent}>
               <View style={[styles.linkIconCircle, { backgroundColor: 'rgba(147, 51, 234, 0.15)' }]}>
@@ -125,7 +125,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
 
           <TouchableOpacity
             style={[styles.linkButton, { backgroundColor: colors.cardBackground }]}
-            onPress={() => openLink('https://github.com/financialai/issues')}
+            onPress={() => openLink('https://github.com/melihdemirdev/FinancialAI/issues')}
           >
             <View style={styles.linkButtonContent}>
               <View style={[styles.linkIconCircle, { backgroundColor: 'rgba(147, 51, 234, 0.15)' }]}>
@@ -147,7 +147,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
 
           <TouchableOpacity
             style={[styles.linkButton, { backgroundColor: colors.cardBackground }]}
-            onPress={() => openLink('mailto:contact@financialai.com')}
+            onPress={() => openLink('mailto:melihcandemir@protonmail.com')}
           >
             <View style={styles.linkButtonContent}>
               <View style={[styles.linkIconCircle, { backgroundColor: 'rgba(147, 51, 234, 0.15)' }]}>
@@ -156,7 +156,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
               <View style={styles.linkTextContainer}>
                 <Text style={[styles.linkTitle, { color: colors.text.primary }]}>E-posta Gönder</Text>
                 <Text style={[styles.linkSubtitle, { color: colors.text.tertiary }]}>
-                  contact@financialai.com
+                  melihcandemir@protonmail.com
                 </Text>
               </View>
             </View>
@@ -170,7 +170,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
           </Text>
           <Heart size={16} color={colors.purple.primary} fill={colors.purple.primary} style={styles.heartIcon} />
           <Text style={[styles.footerText, { color: colors.text.secondary }]}>
-            by Financial AI Team
+            by Melih Can Demir
           </Text>
         </View>
         <Text style={[styles.copyright, { color: colors.text.tertiary }]}>
