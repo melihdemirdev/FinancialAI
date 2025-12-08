@@ -69,3 +69,16 @@ npm install
 
 npx expo start
 
+## 🤖 Yapay CFO Analizi (Gemini)
+
+Dashboard'daki **“Yapay CFO Analizi”** kartı, mevcut varlık/borç/veri özetini Gemini'ye gönderip CFO tarzı bir yorum döndürür. Çalıştırmak için:
+
+1) `.env` dosyasına Gemini anahtarınızı ekleyin:
+```
+EXPO_PUBLIC_GEMINI_API_KEY=YOUR_KEY_HERE
+```
+2) Expo'yu yeniden başlatın (`npx expo start --clear`), ardından Dashboard'da **Analiz al** butonuna basın.
+
+Notlar:
+- Yalnızca ilk birkaç kayıt (her kategoriden 3 örnek) ve temel metrikler gönderilir; veri mahremiyeti için prompt küçük tutulur.
+- Yanıt gelmezse veya anahtar yoksa kart üzerinde hata mesajı görünür.

@@ -6,20 +6,25 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Moon, Sun, User, Bell, Download, Upload, Info, Trash2, DollarSign, Settings as SettingsIcon, ChevronRight } from 'lucide-react-native';
+import { Moon, Sun, User, Bell, Download, Upload, Info, Trash2, DollarSign, Settings as SettingsIcon, ChevronRight, LogOut } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useCurrency } from '../context/CurrencyContext';
 import CurrencyModal from '../../components/CurrencyModal';
 import { AboutScreen } from './AboutScreen';
 import { gradients } from '../theme/colors';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigation } from '@react-navigation/native';
 
 export const SettingsScreen = () => {
   const { theme, toggleTheme, colors } = useTheme();
   const { currency, currencySymbol } = useCurrency();
+  const { isGuest, logout } = useAuth();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const navigation = useNavigation();
 
   const settingsOptions = [
     { id: '1', title: 'Profil Ayarları', icon: User },
@@ -28,6 +33,27 @@ export const SettingsScreen = () => {
     { id: '6', title: 'Verileri İçe Aktar', icon: Upload },
     { id: '7', title: 'Hakkında', icon: Info },
   ];
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Çıkış Yap',
+      'Oturumu kapatmak istediğinizden emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Çıkış Yap',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('Hata', 'Çıkış yapılırken bir hata oluştu.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (showAbout) {
     return (
@@ -67,8 +93,12 @@ export const SettingsScreen = () => {
               <User size={36} color="#FFFFFF" strokeWidth={2} />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Kullanıcı</Text>
-              <Text style={styles.profileEmail}>user@example.com</Text>
+              <Text style={styles.profileName}>
+                {isGuest ? 'Misafir Kullanıcı' : 'Kullanıcı'}
+              </Text>
+              <Text style={styles.profileEmail}>
+                {isGuest ? 'Misafir modunda' : 'user@example.com'}
+              </Text>
             </View>
           </LinearGradient>
         </View>
@@ -140,6 +170,20 @@ export const SettingsScreen = () => {
               <ChevronRight size={20} color={colors.text.secondary} strokeWidth={2} />
             </TouchableOpacity>
           ))}
+
+          {/* Logout Option - Only show if authenticated */}
+          <TouchableOpacity
+            style={[styles.option, { backgroundColor: colors.cardBackground }]}
+            onPress={handleLogout}
+          >
+            <View style={styles.optionLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(255, 71, 87, 0.15)' }]}>
+                <LogOut size={20} color={colors.error} strokeWidth={2.5} />
+              </View>
+              <Text style={[styles.optionTitle, { color: colors.error }]}>Oturumu Kapat</Text>
+            </View>
+            <ChevronRight size={20} color={colors.text.secondary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
 
         {/* Danger Zone */}
@@ -159,7 +203,7 @@ export const SettingsScreen = () => {
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.text.secondary }]}>Finansal AI v1.0.0</Text>
           <Text style={[styles.footerSubtext, { color: colors.text.tertiary }]}>
-            Kişisel finans yönetim aracınız
+            {isGuest ? 'Misafir modunda kullanıyorsunuz' : 'Kişisel finans yönetim aracınız'}
           </Text>
         </View>
       </ScrollView>

@@ -9,6 +9,7 @@ import {
   CreditCard,
   HandCoins,
   Calendar,
+  MessageCircle,
   Settings
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
@@ -17,6 +18,7 @@ import { AssetsScreen } from '../screens/AssetsScreen';
 import { LiabilitiesScreen } from '../screens/LiabilitiesScreen';
 import { ReceivablesScreen } from '../screens/ReceivablesScreen';
 import { InstallmentsScreen } from '../screens/InstallmentsScreen';
+import { ChatScreen } from '../screens/ChatScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { useTheme } from '../context/ThemeContext';
 import { gradients } from '../theme/colors';
@@ -133,6 +135,15 @@ export const BottomTabNavigator = () => {
           title: 'Taksitler',
           headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon Icon={Calendar} focused={focused} activeColor={getActiveIconColor(focused)} inactiveColor={colors.text.secondary} />,
+        }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          title: 'AI Danışman',
+          headerShown: false,
+          tabBarIcon: ({ focused }) => <TabIcon Icon={MessageCircle} focused={focused} activeColor={getActiveIconColor(focused)} inactiveColor={colors.text.secondary} />,
         }}
       />
       <Tab.Screen

@@ -1,25 +1,14 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { CurrencyProvider } from './src/context/CurrencyContext';
-import { BottomTabNavigator } from './src/navigation/BottomTabNavigator';
-
-function AppContent() {
-  const { colors, theme } = useTheme();
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <NavigationContainer>
-        <BottomTabNavigator />
-      </NavigationContainer>
-    </View>
-  );
-}
+import { AuthProvider } from './src/hooks/useAuth';
+import { AuthenticatedNavigator } from './src/navigation/AuthNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './src/navigation/RootNavigation';
 
 export default function App() {
   return (
@@ -27,7 +16,14 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <CurrencyProvider>
-            <AppContent />
+            <AuthProvider>
+              <View style={styles.container}>
+                <StatusBar style={'light'} />
+                <NavigationContainer ref={navigationRef}>
+                  <AuthenticatedNavigator />
+                </NavigationContainer>
+              </View>
+            </AuthProvider>
           </CurrencyProvider>
         </ThemeProvider>
       </SafeAreaProvider>
@@ -38,5 +34,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000', // Default background
   },
 });

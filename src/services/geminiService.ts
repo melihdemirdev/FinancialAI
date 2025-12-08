@@ -1,0 +1,384 @@
+import { AI_CONFIG } from '../config/ai';
+
+export interface GeminiResponse {
+  success: boolean;
+  content?: string;
+  error?: string;
+}
+
+export interface ContentGenerationResponse {
+  success: boolean;
+  title?: string;
+  content?: string;
+  error?: string;
+}
+
+export interface SpellCheckResponse {
+  success: boolean;
+  correctedText?: string;
+  error?: string;
+}
+
+export class GeminiService {
+  private apiKey: string;
+  private endpoint: string;
+
+  constructor() {
+    this.apiKey = AI_CONFIG.gemini.apiKey;
+    this.endpoint = AI_CONFIG.gemini.endpoint;
+  }
+
+  getModel(): string {
+    return AI_CONFIG.gemini.model;
+  }
+
+  async generateContentWithTitle(prompt: string): Promise<ContentGenerationResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const contentPrompt = `İçerik oluştur ve ayrı bir başlık ekle:
+
+İstek: "${prompt}"
+
+Talimatlar:
+- İlgi çekici, bilgilendirici bir başlık oluştur (max 60 karakter)
+- Markdown formatında detaylı, iyi yapılandırılmış içerik üret
+- Uygun alt başlıklar, madde işaretleri veya numaralı listeler kullan
+- İçeriği kapsamlı ve değerli yap
+
+Yanıtını TAM OLARAK şu formatta ver:
+TITLE: [Başlık buraya]
+
+CONTENT:
+[İçerik buraya markdown formatında]
+
+Önemli: TAM OLARAK bu formatı kullan, "TITLE:" ve "CONTENT:" etiketleriyle.`;
+
+    const response = await this.generateContent(contentPrompt);
+
+    if (!response.success || !response.content) {
+      return {
+        success: false,
+        error: response.error || 'Başlıklı içerik oluşturulamadı',
+      };
+    }
+
+    const parsed = this.parseContentWithTitle(response.content);
+
+    return {
+      success: true,
+      title: parsed.title,
+      content: parsed.content,
+    };
+  }
+
+  private parseContentWithTitle(response: string): { title: string; content: string } {
+    const lines = response.split('\n');
+    let title = '';
+    let content = '';
+    let inContent = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (line.startsWith('TITLE:')) {
+        title = line.replace('TITLE:', '').trim();
+      } else if (line.startsWith('CONTENT:')) {
+        inContent = true;
+        continue;
+      } else if (inContent) {
+        content += line + '\n';
+      }
+    }
+
+    if (!title && response.trim()) {
+      const firstLine = response.split('\n')[0].trim();
+      if (firstLine.length <= 100) {
+        title = firstLine.replace(/^#+\s*/, '');
+        content = response.split('\n').slice(1).join('\n').trim();
+      } else {
+        title = firstLine.substring(0, 60).split(' ').slice(0, -1).join(' ') + '...';
+        content = response.trim();
+      }
+    }
+
+    return {
+      title: title || 'Oluşturulan İçerik',
+      content: content.trim() || response.trim(),
+    };
+  }
+
+  async generateContent(prompt: string): Promise<GeminiResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const modelsToTry = [AI_CONFIG.gemini.model, ...(AI_CONFIG.gemini.fallbackModels || [])];
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const model = modelsToTry[i];
+
+      try {
+        const url = `${this.endpoint}/models/${model}:generateContent?key=${this.apiKey}`;
+
+        const requestBody = {
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          },
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_HATE_SPEECH',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+          ],
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+
+          if (response.status === 429) {
+            throw new Error('RATE_LIMIT');
+          }
+
+          throw new Error(`HTTP ${response.status}: ${errorData?.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+          const generatedText = data.candidates[0].content.parts[0].text;
+          return {
+            success: true,
+            content: generatedText.trim(),
+          };
+        } else {
+          throw new Error('İçerik oluşturulamadı');
+        }
+      } catch (error: any) {
+        console.error(`${model} ile üretim hatası:`, error);
+
+        if (error.message === 'RATE_LIMIT') {
+          if (i < modelsToTry.length - 1) {
+            console.log(`Rate limit aşıldı, ${AI_CONFIG.gemini.retryDelay}ms bekleyip sonraki modeli deniyorum...`);
+            await this.delay(AI_CONFIG.gemini.retryDelay);
+            continue;
+          }
+          return {
+            success: false,
+            error: 'Rate limit aşıldı. Lütfen biraz bekleyip tekrar deneyin (bedava tier: 15 istek/dakika).',
+          };
+        }
+
+        if (
+          (error.message?.includes('503') || error.message?.includes('overloaded')) &&
+          i < modelsToTry.length - 1
+        ) {
+          console.log(`Model ${model} meşgul, sonraki modeli deniyorum...`);
+          continue;
+        }
+
+        if (i === modelsToTry.length - 1) {
+          return {
+            success: false,
+            error: error.message || 'İçerik oluşturulamadı',
+          };
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Tüm modeller başarısız oldu',
+    };
+  }
+
+  isConfigured(): boolean {
+    return this.apiKey !== 'YOUR_GEMINI_API_KEY_HERE' && this.apiKey.length > 0;
+  }
+
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async correctSpelling(text: string, language: string = 'tr'): Promise<SpellCheckResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const prompt = `Sen uzman bir dil editörü ve yazım denetleyicisisin. Aşağıdaki metindeki yazım, dilbilgisi ve noktalama işaretlerini düzelt.
+
+Dil: ${language}
+Düzeltilecek metin: "${text}"
+
+Talimatlar:
+- Tüm yazım hatalarını düzelt
+- Dilbilgisi hatalarını düzelt
+- Noktalamayı iyileştir
+- Orijinal anlam ve tonu koru
+- Aynı formatlama yapısını koru
+- Metin zaten doğruysa, değiştirmeden döndür
+
+SADECE düzeltilmiş metni döndür, açıklama veya ek metin ekleme.`;
+
+    try {
+      const response = await this.generateContent(prompt);
+
+      if (response.success && response.content) {
+        return {
+          success: true,
+          correctedText: response.content.trim(),
+        };
+      } else {
+        return {
+          success: false,
+          error: response.error || 'Yazım düzeltme başarısız oldu',
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Yazım düzeltme başarısız oldu',
+      };
+    }
+  }
+
+  async improveWriting(
+    text: string,
+    style: 'formal' | 'casual' | 'academic' | 'creative' = 'formal'
+  ): Promise<GeminiResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const styleInstructions = {
+      formal: 'Metni daha resmi, profesyonel ve iş dünyasına uygun yap',
+      casual: 'Metni daha rahat, arkadaşça ve konuşma diline uygun yap',
+      academic: 'Metni daha akademik, bilimsel ve araştırma odaklı yap',
+      creative: 'Metni daha yaratıcı, ilgi çekici ve etkileyici yap',
+    };
+
+    const prompt = `Sen uzman bir yazı editörüsün. Aşağıdaki metni daha ${style} yapmak için iyileştir.
+
+Stil: ${styleInstructions[style]}
+İyileştirilecek metin: "${text}"
+
+Talimatlar:
+- Netlik ve okunabilirliği artır
+- Akış ve tutarlılığı iyileştir
+- Tuhaf ifadeleri düzelt
+- Orijinal anlamı koru
+- Aynı yapı ve formatlamayı koru
+- Tonu daha ${style} yap
+
+SADECE iyileştirilmiş metni döndür, açıklama veya ek metin ekleme.`;
+
+    return this.generateContent(prompt);
+  }
+
+  async generateFinancialAdvice(
+    topic: string,
+    context?: string
+  ): Promise<GeminiResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const prompt = `Sen deneyimli bir finans danışmanısın. Aşağıdaki konu hakkında pratik ve uygulanabilir finansal tavsiyeler ver.
+
+Konu: ${topic}
+${context ? `Bağlam: ${context}` : ''}
+
+Talimatlar:
+- Türkçe kullan
+- Kısa ve öz ol (max 150 kelime)
+- Uygulanabilir tavsiyeler ver
+- Gerçekçi ve pratik ol
+- Madde madde listele
+
+Tavsiyelerini ver:`;
+
+    return this.generateContent(prompt);
+  }
+
+  async analyzeBudget(
+    income: number,
+    expenses: number,
+    savings: number,
+    currency: string = '₺'
+  ): Promise<GeminiResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış. .env dosyasına anahtarınızı ekleyin.',
+      };
+    }
+
+    const prompt = `Sen bir bütçe analiz uzmanısın. Aşağıdaki finansal verileri analiz et ve öneriler sun.
+
+Gelir: ${income} ${currency}
+Giderler: ${expenses} ${currency}
+Tasarruf: ${savings} ${currency}
+
+Talimatlar:
+- Türkçe kullan
+- Kısa ve net ol (max 120 kelime)
+- Bütçe sağlığını değerlendir
+- Risk varsa belirt
+- Aksiyon önerileri sun
+- 3-5 madde halinde sun
+
+Analiz:`;
+
+    return this.generateContent(prompt);
+  }
+}
+
+export const geminiService = new GeminiService();
