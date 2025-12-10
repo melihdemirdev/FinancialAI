@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onClose,
   onAdd
 }) => {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'asset' | 'liability'>('asset');
@@ -125,7 +127,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
+            <TouchableOpacity style={[styles.addButton, { marginBottom: insets.bottom + 10 }]} onPress={handleSubmit}>
               <Text style={styles.addButtonText}>Add Transaction</Text>
             </TouchableOpacity>
           </View>

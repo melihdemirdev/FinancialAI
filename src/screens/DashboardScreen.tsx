@@ -758,62 +758,25 @@ export const DashboardScreen = () => {
                 >
                   {aiResult.summary}
                 </Markdown>
-                {aiResult.risks.length > 0 && (
-                  <View style={styles.aiList}>
-                    <Text style={[styles.aiSectionTitle, { color: colors.error }]}>⚠️ Riskler:</Text>
-                    {aiResult.risks.map((item, idx) => (
-                      <View key={`risk-${idx}`} style={{ flex: 1 }}>
-                        <Markdown
-                          style={{
-                            body: {
-                              color: colors.text.primary,
-                              fontSize: 13,
-                              lineHeight: 18
-                            },
-                            strong: {
-                              color: colors.text.primary,
-                              fontWeight: '700'
-                            },
-                            paragraph: {
-                              marginTop: 0,
-                              marginBottom: 4
-                            }
-                          }}
-                        >
-                          {`• ${item}`}
-                        </Markdown>
+
+                {/* Madde sayılarını göster */}
+                {(aiResult.risks.length > 0 || aiResult.actions.length > 0) && (
+                  <View style={styles.aiStatsContainer}>
+                    {aiResult.risks.length > 0 && (
+                      <View style={[styles.aiStatBadge, { backgroundColor: 'rgba(255, 71, 87, 0.1)' }]}>
+                        <Text style={[styles.aiStatNumber, { color: colors.error }]}>{aiResult.risks.length}</Text>
+                        <Text style={[styles.aiStatLabel, { color: colors.error }]}>Risk</Text>
                       </View>
-                    ))}
+                    )}
+                    {aiResult.actions.length > 0 && (
+                      <View style={[styles.aiStatBadge, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+                        <Text style={[styles.aiStatNumber, { color: colors.success }]}>{aiResult.actions.length}</Text>
+                        <Text style={[styles.aiStatLabel, { color: colors.success }]}>Öneri</Text>
+                      </View>
+                    )}
                   </View>
                 )}
-                {aiResult.actions.length > 0 && (
-                  <View style={styles.aiList}>
-                    <Text style={[styles.aiSectionTitle, { color: colors.success }]}>✓ Öneriler:</Text>
-                    {aiResult.actions.map((item, idx) => (
-                      <View key={`action-${idx}`} style={{ flex: 1 }}>
-                        <Markdown
-                          style={{
-                            body: {
-                              color: colors.text.primary,
-                              fontSize: 13,
-                              lineHeight: 18
-                            },
-                            strong: {
-                              color: colors.text.primary,
-                              fontWeight: '700'
-                            },
-                            paragraph: {
-                              marginTop: 0,
-                              marginBottom: 4
-                            }
-                          }}
-                        >
-                          {`→ ${item}`}
-                        </Markdown>
-                      </View>
-                    ))}
-                  </View>
-                )}
+
                 {!aiResult.risks.length && !aiResult.actions.length && aiResult.rawText && (
                   <Markdown
                     style={{
@@ -1343,6 +1306,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     flexWrap: "wrap",
+  },
+  aiStatsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  aiStatBadge: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  aiStatNumber: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  aiStatLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   reportButton: {
     marginTop: 10,

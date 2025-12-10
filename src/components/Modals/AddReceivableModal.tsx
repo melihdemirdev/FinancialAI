@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, HandCoins, TrendingUp, Calendar, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -30,6 +31,7 @@ interface AddReceivableModalProps {
 export const AddReceivableModal: React.FC<AddReceivableModalProps> = ({ visible, onClose, onAdd }) => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
+  const insets = useSafeAreaInsets();
   const [debtor, setDebtor] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -152,7 +154,7 @@ export const AddReceivableModal: React.FC<AddReceivableModalProps> = ({ visible,
           </ScrollView>
 
           {/* Add Button */}
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAdd}

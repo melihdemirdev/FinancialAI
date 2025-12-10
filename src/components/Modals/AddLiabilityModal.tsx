@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, CreditCard, TrendingDown, Check, Calendar, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -33,6 +34,7 @@ interface AddLiabilityModalProps {
 export const AddLiabilityModal: React.FC<AddLiabilityModalProps> = ({ visible, onClose, onAdd }) => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
+  const insets = useSafeAreaInsets();
   const [type, setType] = useState<'credit_card' | 'personal_debt'>('credit_card');
   const [name, setName] = useState('');
   const [totalLimit, setTotalLimit] = useState('');
@@ -255,7 +257,7 @@ export const AddLiabilityModal: React.FC<AddLiabilityModalProps> = ({ visible, o
           </ScrollView>
 
           {/* Add Button */}
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAdd}

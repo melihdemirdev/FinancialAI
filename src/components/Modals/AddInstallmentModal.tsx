@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Calendar, TrendingDown, Clock, DollarSign } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -31,6 +32,7 @@ interface AddInstallmentModalProps {
 export const AddInstallmentModal: React.FC<AddInstallmentModalProps> = ({ visible, onClose, onAdd }) => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -172,7 +174,7 @@ export const AddInstallmentModal: React.FC<AddInstallmentModalProps> = ({ visibl
           </ScrollView>
 
           {/* Add Button */}
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleAdd}
