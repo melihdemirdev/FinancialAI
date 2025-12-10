@@ -15,6 +15,9 @@ export interface FinancialContext {
   totalReceivables: number;
   totalInstallments: number;
   currencySymbol: string;
+  findeksScore?: number;
+  salary?: number;
+  additionalIncome?: number;
 }
 
 export class AIChatService {
@@ -22,23 +25,44 @@ export class AIChatService {
   private endpoint: string;
   private conversationHistory: ChatMessage[] = [];
 
-  constructor() {
-    this.apiKey = AI_CONFIG.gemini.apiKey;
+  constructor(customApiKey?: string) {
+    this.apiKey = customApiKey || AI_CONFIG.gemini.apiKey;
     this.endpoint = AI_CONFIG.gemini.endpoint;
   }
 
+  updateApiKey(newApiKey: string) {
+    this.apiKey = newApiKey;
+  }
+
   private buildSystemPrompt(context: FinancialContext): string {
+    const personalInfo =
+      context.findeksScore || context.salary || context.additionalIncome
+        ? `
+KİŞİSEL BİLGİLER:
+${context.findeksScore ? `Findeks Puanı: ${context.findeksScore}` : ''}
+${context.salary ? `Aylık Maaş: ${context.currencySymbol}${context.salary.toFixed(0)}` : ''}
+${context.additionalIncome ? `Ek Gelir: ${context.currencySymbol}${context.additionalIncome.toFixed(0)}` : ''}
+`
+        : '';
+
     return `Sen finansal danışmansın. Kısa ve net tavsiyelerde bulun.
 
 FİNANSAL DURUM:
 Varlık: ${context.currencySymbol}${context.totalAssets.toFixed(0)} | Borç: ${context.currencySymbol}${context.totalLiabilities.toFixed(0)} | Net: ${context.currencySymbol}${context.netWorth.toFixed(0)}
 Güvenli Limit: ${context.currencySymbol}${context.safeToSpend.toFixed(0)} | Alacak: ${context.currencySymbol}${context.totalReceivables.toFixed(0)} | Taksit: ${context.currencySymbol}${context.totalInstallments.toFixed(0)}
-
+${personalInfo}
 KURALLAR:
 - Türkçe, samimi, max 100 kelime
 - Rakamlarla örnekle
 - Risk varsa söyle
-- Net cevap ver`;
+- Net cevap ver
+
+FORMAT:
+- Yanıtlarını Markdown formatında yaz
+- Önemli bilgileri **kalın** yap
+- Listeler için • veya 1. 2. 3. kullan
+- Başlıklar için ## kullan
+- Kod veya hesaplamalar için \`backtick\` kullan`;
   }
 
   async sendMessage(
@@ -119,7 +143,25 @@ KURALLAR:
         if (!response.ok) {
           const errorText = await response.text();
           console.error('API Error:', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+
+          // Quota ve rate limit hatalarını yakala
+          if (response.status === 429) {
+            throw new Error('RATE_LIMIT|Çok fazla istek gönderildi. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+          }
+
+          if (errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('quota')) {
+            throw new Error('QUOTA_EXCEEDED|API kotanız doldu. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin.');
+          }
+
+          if (response.status === 503 || errorText.includes('overloaded')) {
+            throw new Error('SERVICE_UNAVAILABLE|Servis şu anda meşgul. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+          }
+
+          if (response.status === 400 && errorText.includes('API_KEY')) {
+            throw new Error('INVALID_API_KEY|API anahtarınız geçersiz. Lütfen ayarlardan kontrol edin.');
+          }
+
+          throw new Error(`API_ERROR|Bir hata oluştu (${response.status}). Lütfen tekrar deneyin.`);
         }
 
         // Non-streaming endpoint kullanıyoruz, direkt JSON al

@@ -5,6 +5,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { CurrencyProvider } from './src/context/CurrencyContext';
+import { ProfileProvider } from './src/context/ProfileContext';
+import { NotificationProvider } from './src/context/NotificationContext';
+import { ApiKeyProvider } from './src/context/ApiKeyContext';
 import { AuthProvider } from './src/hooks/useAuth';
 import { AuthenticatedNavigator } from './src/navigation/AuthNavigator';
 import { NavigationContainer } from '@react-navigation/native';
@@ -16,14 +19,20 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <CurrencyProvider>
-            <AuthProvider>
-              <View style={styles.container}>
-                <StatusBar style={'light'} />
-                <NavigationContainer ref={navigationRef}>
-                  <AuthenticatedNavigator />
-                </NavigationContainer>
-              </View>
-            </AuthProvider>
+            <ProfileProvider>
+              <NotificationProvider>
+                <ApiKeyProvider>
+                  <AuthProvider>
+                    <View style={styles.container}>
+                      <StatusBar style={'light'} />
+                      <NavigationContainer ref={navigationRef}>
+                        <AuthenticatedNavigator />
+                      </NavigationContainer>
+                    </View>
+                  </AuthProvider>
+                </ApiKeyProvider>
+              </NotificationProvider>
+            </ProfileProvider>
           </CurrencyProvider>
         </ThemeProvider>
       </SafeAreaProvider>

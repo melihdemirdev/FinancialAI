@@ -26,6 +26,7 @@ interface FinanceStore {
   getTotalLiabilities: () => number;
   getNetWorth: () => number;
   getSafeToSpend: () => number;
+  clearAllData: () => void;
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -98,10 +99,16 @@ export const useFinanceStore = create<FinanceStore>()(
         const liquidAssets = get().assets
           .filter(a => a.type === 'liquid')
           .reduce((total, item) => total + (Number(item.value) || 0), 0);
-        const totalAssets = get().getTotalAssets(); 
+        const totalAssets = get().getTotalAssets();
         const totalDebt = get().getTotalLiabilities();
         return totalAssets - totalDebt;
-      }
+      },
+      clearAllData: () => set({
+        assets: [],
+        liabilities: [],
+        receivables: [],
+        installments: []
+      })
     }),
     {
       name: 'finance-storage',

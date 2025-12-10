@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Info, Github, Mail, Bug, Heart, Code, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { gradients } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AboutScreenProps {
   onBack?: () => void;
@@ -24,7 +25,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       {/* Modern Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
@@ -177,7 +178,7 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
           © {new Date().getFullYear()} Financial AI. Tüm hakları saklıdır.
         </Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
     justifyContent: 'space-between',
   },

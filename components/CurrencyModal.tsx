@@ -63,20 +63,21 @@ export default function CurrencyModal({ visible, onClose }: CurrencyModalProps) 
     >
       <View style={[styles.centeredView, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
         <View style={[styles.modalView, { backgroundColor: colors.background, borderColor: colors.border.primary }]}>
-          <Text style={[styles.modalTitle, { color: colors.text.primary }]}>PARA BİRİMİ SEÇİN</Text>
+          <Text style={[styles.modalTitle, { color: colors.text.primary }]}>Para Birimi Seçin</Text>
 
           <FlatList
             data={currencies}
             keyExtractor={(item) => item.code}
             renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
+            style={styles.currencyList}
           />
 
           <TouchableOpacity
             style={[styles.button, styles.buttonCancel, { backgroundColor: colors.cardBackground, borderColor: colors.border.secondary }]}
             onPress={onClose}
           >
-            <Text style={[styles.buttonText, { color: colors.text.primary }]}>KAPAT</Text>
+            <Text style={[styles.buttonText, { color: colors.text.primary }]}>Kapat</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -103,7 +104,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
-    width: '85%',
+    width: '95%',
+    maxWidth: 600,
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
@@ -169,5 +171,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: 'bold'
+  },
+  currencyList: {
+    maxHeight: 350,
   }
 });

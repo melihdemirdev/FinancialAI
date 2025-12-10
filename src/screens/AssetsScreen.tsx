@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MoreVertical, Edit, Trash2, TrendingUp, Wallet, Plus } from 'lucide-react-native';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +16,12 @@ import { useCurrency } from '../context/CurrencyContext';
 import { gradients } from '../theme/colors';
 import { AddAssetModal } from '../components/Modals/AddAssetModal';
 import { EditAssetModal } from '../components/Modals/EditAssetModal';
+import { formatCurrency } from '../utils/formatters';
 
 export const AssetsScreen = () => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency(); // Get currency symbol from context
+  const insets = useSafeAreaInsets();
   const { assets, getTotalAssets, addAsset, updateAsset, removeAsset } = useFinanceStore();
   const totalAssets = getTotalAssets();
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -83,7 +86,7 @@ export const AssetsScreen = () => {
               <View>
                 <Text style={styles.heroLabel}>Toplam Değer</Text>
                 <Text style={styles.heroValue}>
-                  {currencySymbol}{totalAssets.toFixed(2)}
+                  {formatCurrency(totalAssets, currencySymbol)}
                 </Text>
               </View>
             </View>
@@ -125,7 +128,7 @@ export const AssetsScreen = () => {
 
             <View style={styles.cardBottom}>
               <Text style={[styles.cardValue, { color: colors.success }]}>
-                {currencySymbol}{item.value.toFixed(2)}
+                {formatCurrency(item.value, currencySymbol)}
               </Text>
               {item.details && (
                 <Text style={[styles.cardDetails, { color: colors.text.secondary }]}>
@@ -184,7 +187,7 @@ export const AssetsScreen = () => {
 
       {/* FAB Button */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + 65 }]}
         onPress={() => setAddModalVisible(true)}
       >
         <LinearGradient
@@ -298,19 +301,20 @@ const styles = StyleSheet.create({
   list: {
     padding: 24,
     paddingTop: 16,
-    paddingBottom: 100,
+    paddingBottom: 200,
   },
 
   // Card Styles
   card: {
     borderRadius: 20,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 10,
+    zIndex: 100,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -431,11 +435,11 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 24,
     borderRadius: 28,
     overflow: 'hidden',
-    elevation: 12,
+    elevation: 15,
+    zIndex: 999,
     shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,

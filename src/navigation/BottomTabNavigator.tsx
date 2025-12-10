@@ -46,7 +46,7 @@ const TabIcon = ({
       />
     )}
     <Icon
-      size={20}
+      size={24}
       color={focused ? activeColor : inactiveColor}
       strokeWidth={2.5}
     />
@@ -88,6 +88,7 @@ export const BottomTabNavigator = () => {
         tabBarBackground: () => (
           <View style={[styles.tabBarBackground, { backgroundColor: colors.cardBackground }]}>
             <View style={[styles.tabBarBorder, { backgroundColor: colors.border.primary }]} />
+            <View style={[styles.tabBarExtension, { backgroundColor: colors.cardBackground }]} />
           </View>
         ),
       }}
@@ -162,7 +163,7 @@ export const BottomTabNavigator = () => {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: '2%',
     left: 0,
     right: 0,
     borderRadius: 0,
@@ -184,6 +185,13 @@ const styles = StyleSheet.create({
     height: 1,
     opacity: 0.1,
   },
+  tabBarExtension: {
+    position: 'absolute',
+    bottom: -270,
+    left: 0,
+    right: 0,
+    height: 300,
+  },
   tabLabel: {
     fontSize: 9,
     fontWeight: '600',
@@ -191,9 +199,9 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',

@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, HandCoins, TrendingUp, Calendar, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { gradients } from '../../theme/colors';
 
 interface AddReceivableModalProps {
@@ -28,6 +29,7 @@ interface AddReceivableModalProps {
 
 export const AddReceivableModal: React.FC<AddReceivableModalProps> = ({ visible, onClose, onAdd }) => {
   const { colors } = useTheme();
+  const { currencySymbol } = useCurrency();
   const [debtor, setDebtor] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -105,7 +107,7 @@ export const AddReceivableModal: React.FC<AddReceivableModalProps> = ({ visible,
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.text.primary }]}>Tutar</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
-                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>{currencySymbol}</Text>
                 <TextInput
                   style={[styles.input, { color: colors.text.primary }]}
                   value={amount}

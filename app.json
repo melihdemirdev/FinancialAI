@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FinancialAI",
+    "name": "Financial AI",
     "slug": "FinancialAI",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,10 +25,36 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.melihcandemir.FinancialAI"
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.melihcandemir.FinancialAI",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ]
     },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#9333EA",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Financial AI"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#9333EA"
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "03c172e1-0f75-4276-b302-786fb6223d87"
+      }
     }
   }
 }

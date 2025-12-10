@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Calendar, TrendingDown, Clock, DollarSign } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { gradients } from '../../theme/colors';
 import { StrategicInstallment } from '../../types';
 
@@ -25,6 +26,7 @@ interface EditInstallmentModalProps {
 
 export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({ visible, onClose, installment, onUpdate }) => {
   const { colors } = useTheme();
+  const { currencySymbol } = useCurrency();
   const [name, setName] = useState('');
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -125,7 +127,7 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({ visi
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.text.primary }]}>Aylık Taksit Tutarı</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
-                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>{currencySymbol}</Text>
                 <TextInput
                   style={[styles.input, { color: colors.text.primary }]}
                   value={installmentAmount}

@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MoreVertical, Edit, Trash2, Calendar, TrendingDown, Plus, Clock } from 'lucide-react-native';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +16,12 @@ import { useCurrency } from '../context/CurrencyContext';
 import { gradients } from '../theme/colors';
 import { AddInstallmentModal } from '../components/Modals/AddInstallmentModal';
 import { EditInstallmentModal } from '../components/Modals/EditInstallmentModal';
+import { formatCurrency } from '../utils/formatters';
 
 export const InstallmentsScreen = () => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency(); // Get currency symbol from context
+  const insets = useSafeAreaInsets();
   const { installments, addInstallment, updateInstallment, removeInstallment } = useFinanceStore();
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -80,7 +83,7 @@ export const InstallmentsScreen = () => {
               <View>
                 <Text style={styles.heroLabel}>Aylık Ödeme</Text>
                 <Text style={styles.heroValue}>
-                  {currencySymbol}{totalMonthlyPayment.toFixed(2)}
+                  {formatCurrency(totalMonthlyPayment, currencySymbol)}
                 </Text>
               </View>
             </View>
@@ -124,7 +127,7 @@ export const InstallmentsScreen = () => {
                 <View style={styles.infoItem}>
                   <Text style={[styles.infoLabel, { color: colors.text.secondary }]}>Aylık Tutar</Text>
                   <Text style={[styles.infoValue, { color: colors.accent.pink }]}>
-                    {currencySymbol}{item.installmentAmount.toFixed(2)}
+                    {formatCurrency(item.installmentAmount, currencySymbol)}
                   </Text>
                 </View>
                 <View style={styles.infoItem}>
@@ -210,7 +213,7 @@ export const InstallmentsScreen = () => {
 
       {/* FAB Button */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + 65 }]}
         onPress={() => setAddModalVisible(true)}
       >
         <LinearGradient
@@ -324,14 +327,14 @@ const styles = StyleSheet.create({
   list: {
     padding: 24,
     paddingTop: 16,
-    paddingBottom: 100,
+    paddingBottom: 200,
   },
 
   // Card Styles
   card: {
     borderRadius: 20,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -493,11 +496,11 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 24,
     borderRadius: 28,
     overflow: 'hidden',
-    elevation: 12,
+    elevation: 20,
+    zIndex: 999,
     shadowColor: '#EC4899',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,

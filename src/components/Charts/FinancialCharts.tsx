@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { TrendingUp, TrendingDown, DollarSign, CreditCard } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { formatNumberAbbreviated, formatCurrency, formatPercentage } from '../../utils/formatters';
 
 interface FinancialChartsProps {
   totalAssets: number;
@@ -21,16 +22,6 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
 }) => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
-
-  // Format sayılar
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
-    } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
-    }
-    return num.toFixed(0);
-  };
 
   // Yüzdeler
   const assetPercentage = totalAssets > 0 ? (totalAssets / (totalAssets + totalLiabilities)) * 100 : 50;
@@ -51,10 +42,10 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
             </View>
             <Text style={[styles.label, { color: colors.text.secondary }]}>Varlıklar</Text>
             <Text style={[styles.value, { color: '#00FF9D' }]}>
-              {currencySymbol}{formatNumber(totalAssets)}
+              {formatCurrency(totalAssets, currencySymbol, 0)}
             </Text>
             <Text style={[styles.percentage, { color: colors.text.tertiary }]}>
-              %{assetPercentage.toFixed(0)}
+              {formatPercentage(assetPercentage, 0)}
             </Text>
           </View>
 
@@ -64,10 +55,10 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
             </View>
             <Text style={[styles.label, { color: colors.text.secondary }]}>Borçlar</Text>
             <Text style={[styles.value, { color: '#FF4757' }]}>
-              {currencySymbol}{formatNumber(totalLiabilities)}
+              {formatCurrency(totalLiabilities, currencySymbol, 0)}
             </Text>
             <Text style={[styles.percentage, { color: colors.text.tertiary }]}>
-              %{liabilityPercentage.toFixed(0)}
+              {formatPercentage(liabilityPercentage, 0)}
             </Text>
           </View>
         </View>
@@ -90,7 +81,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
             <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>Alacaklar</Text>
           </View>
           <Text style={[styles.metricValue, { color: colors.accent.cyan }]}>
-            {currencySymbol}{formatNumber(totalReceivables)}
+            {formatCurrency(totalReceivables, currencySymbol, 0)}
           </Text>
         </View>
 
@@ -102,7 +93,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
             <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>Taksitler</Text>
           </View>
           <Text style={[styles.metricValue, { color: colors.purple.light }]}>
-            {currencySymbol}{formatNumber(totalInstallments)}
+            {formatCurrency(totalInstallments, currencySymbol, 0)}
           </Text>
         </View>
       </View>
@@ -115,7 +106,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
           <View style={styles.ratioHeader}>
             <Text style={[styles.ratioLabel, { color: colors.text.secondary }]}>Borç/Varlık Oranı</Text>
             <Text style={[styles.ratioValue, { color: debtRatio > 50 ? '#FF4757' : '#00FF9D' }]}>
-              %{debtRatio.toFixed(0)}
+              {formatPercentage(debtRatio, 0)}
             </Text>
           </View>
           <View style={[styles.ratioBar, { backgroundColor: colors.text.tertiary + '20' }]}>
@@ -135,7 +126,7 @@ export const FinancialCharts: React.FC<FinancialChartsProps> = ({
           <View style={styles.ratioHeader}>
             <Text style={[styles.ratioLabel, { color: colors.text.secondary }]}>Likidite Oranı</Text>
             <Text style={[styles.ratioValue, { color: liquidityRatio > 100 ? '#00FF9D' : '#FF4757' }]}>
-              %{liquidityRatio.toFixed(0)}
+              {formatPercentage(liquidityRatio, 0)}
             </Text>
           </View>
           <View style={[styles.ratioBar, { backgroundColor: colors.text.tertiary + '20' }]}>

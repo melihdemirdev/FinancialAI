@@ -142,7 +142,7 @@ CONTENT:
             temperature: 0.7,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
           },
           safetySettings: [
             {
@@ -376,6 +376,110 @@ Talimatlar:
 - 3-5 madde halinde sun
 
 Analiz:`;
+
+    return this.generateContent(prompt);
+  }
+
+  async generateCfoReport(reportContext: {
+    totalAssets: number;
+    totalLiabilities: number;
+    netWorth: number;
+    safeToSpend: number;
+    totalReceivables: number;
+    totalInstallments: number;
+    currencySymbol: string;
+    findeksScore?: number;
+    salary?: number;
+    additionalIncome?: number;
+  }): Promise<GeminiResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Gemini API anahtarı yapılandırılmamış.',
+      };
+    }
+
+    const {
+      totalAssets,
+      totalLiabilities,
+      netWorth,
+      safeToSpend,
+      totalReceivables,
+      totalInstallments,
+      currencySymbol,
+      findeksScore,
+      salary,
+      additionalIncome,
+    } = reportContext;
+
+    const personalInfo =
+      findeksScore || salary || additionalIncome
+        ? `
+### Kişisel Finansal Bilgiler
+*   **Findeks Kredi Notu:** ${findeksScore || 'Belirtilmemiş'}
+*   **Aylık Net Maaş:** ${salary ? `${currencySymbol}${salary.toFixed(0)}` : 'Belirtilmemiş'}
+*   **Aylık Ek Gelir:** ${additionalIncome ? `${currencySymbol}${additionalIncome.toFixed(0)}` : 'Belirtilmemiş'}
+`
+        : '';
+
+    const prompt = `
+Sen FinancialAI uygulamasının kıdemli Finans Direktörü (CFO) olarak görev yapıyorsun. Kullanıcının finansal durumunu detaylı analiz et ve kapsamlı, profesyonel bir rapor oluştur.
+
+**Kullanıcı Verileri:**
+*   Toplam Varlıklar: ${currencySymbol}${totalAssets.toFixed(0)}
+*   Toplam Borçlar: ${currencySymbol}${totalLiabilities.toFixed(0)}
+*   Net Değer: ${currencySymbol}${netWorth.toFixed(0)}
+*   Toplam Alacaklar: ${currencySymbol}${totalReceivables.toFixed(0)}
+*   Toplam Taksitler: ${currencySymbol}${totalInstallments.toFixed(0)}
+*   Güvenli Harcama Limiti: ${currencySymbol}${safeToSpend.toFixed(0)}
+${personalInfo}
+
+**Rapor Formatı (Markdown formatında TAM olarak tüm bölümleri doldur):**
+
+**Yönetici Özeti:**
+* [4-5 madde ile finansal durumu kapsamlı özetle]
+* [Bilanço analizi, nakit akışı değerlendirmesi, borç yapısı ve genel finansal sağlık]
+* [Her madde 20-25 kelime olabilir, net ve anlaşılır ol]
+
+**Finansal Sağlık Notu:** [A+ ile F arası detaylı not] - [2-3 cümle ile finansal sağlığı açıkla]
+
+**Detaylı Analiz:**
+* **Varlık Yapısı:** [Varlıkların kompozisyonu ve kalitesi hakkında 2-3 cümle]
+* **Borç Yönetimi:** [Borç seviyesi, sürdürülebilirliği ve risk analizi - 2-3 cümle]
+* **Likidite Durumu:** [Nakit akışı ve ödeme gücü değerlendirmesi - 2-3 cümle]
+* **Taksit Yükü:** [Aylık taksit tutarının analizi ve öneriler - 2-3 cümle]
+
+**Stratejik Öneriler:**
+
+**Kısa Vade (0-3 ay):**
+* [Acil aksiyonlar - 3-4 somut öneri, her biri 15-20 kelime]
+* [Hemen yapılması gerekenler üzerine odaklan]
+
+**Orta Vade (3-12 ay):**
+* [Hedef odaklı öneriler - 3-4 öneri, her biri 15-20 kelime]
+* [Finansal iyileştirme ve büyüme stratejileri]
+
+**Uzun Vade (1+ yıl):**
+* [Stratejik tavsiyeler - 2-3 öneri, her biri 15-20 kelime]
+* [Uzun vadeli finansal güvenlik ve büyüme planı]
+
+**Potansiyel Riskler:**
+* [En az 3-4 önemli risk faktörü belirle, her biri 15-20 kelime]
+* [Her riskin potansiyel etkisini ve olasılığını değerlendir]
+
+**Sonuç ve Genel Değerlendirme:**
+* [2-3 paragraf ile genel durumu özetle]
+* [Güçlü yönleri ve geliştirilmesi gereken alanları vurgula]
+* [Motivasyonel ve yapıcı bir sonuç]
+
+**ÖNEMLİ:**
+- Tüm bölümleri MUTLAKA doldur
+- Markdown formatını düzgün kullan (**kalın**, *italik*, madde işaretleri)
+- Anlaşılır ve profesyonel dil kullan
+- Jargon yerine sade Türkçe tercih et
+- Raporu TAM ve EKSİKSİZ olarak tamamla
+- Her bölümü detaylı bir şekilde doldur
+`;
 
     return this.generateContent(prompt);
   }

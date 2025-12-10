@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MoreVertical, Edit, Trash2, TrendingDown, CreditCard, Plus } from 'lucide-react-native';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +16,12 @@ import { useCurrency } from '../context/CurrencyContext';
 import { gradients } from '../theme/colors';
 import { AddLiabilityModal } from '../components/Modals/AddLiabilityModal';
 import { EditLiabilityModal } from '../components/Modals/EditLiabilityModal';
+import { formatCurrency } from '../utils/formatters';
 
 export const LiabilitiesScreen = () => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency(); // Get currency symbol from context
+  const insets = useSafeAreaInsets();
   const { liabilities, getTotalLiabilities, addLiability, updateLiability, removeLiability } = useFinanceStore();
   const totalLiabilities = getTotalLiabilities();
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -81,7 +84,7 @@ export const LiabilitiesScreen = () => {
               <View>
                 <Text style={styles.heroLabel}>Toplam Borç</Text>
                 <Text style={styles.heroValue}>
-                  {currencySymbol}{totalLiabilities.toFixed(2)}
+                  {formatCurrency(totalLiabilities, currencySymbol)}
                 </Text>
               </View>
             </View>
@@ -121,13 +124,13 @@ export const LiabilitiesScreen = () => {
 
             <View style={styles.cardBottom}>
               <Text style={[styles.cardValue, { color: colors.error }]}>
-                {currencySymbol}{item.currentDebt.toFixed(2)}
+                {formatCurrency(item.currentDebt, currencySymbol)}
               </Text>
 
               {item.type === 'credit_card' && item.totalLimit && (
                 <View style={[styles.creditInfo, { borderTopColor: colors.border.secondary }]}>
                   <Text style={[styles.infoLabel, { color: colors.text.secondary }]}>Toplam Limit</Text>
-                  <Text style={[styles.infoValue, { color: colors.text.primary }]}>{currencySymbol}{item.totalLimit.toFixed(2)}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text.primary }]}>{formatCurrency(item.totalLimit, currencySymbol)}</Text>
                 </View>
               )}
 
@@ -200,7 +203,7 @@ export const LiabilitiesScreen = () => {
 
       {/* FAB Button */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + 65 }]}
         onPress={() => setAddModalVisible(true)}
       >
         <LinearGradient
@@ -314,19 +317,20 @@ const styles = StyleSheet.create({
   list: {
     padding: 24,
     paddingTop: 16,
-    paddingBottom: 100,
+    paddingBottom: 200,
   },
 
   // Card Styles
   card: {
     borderRadius: 20,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 10,
+    zIndex: 100,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -462,11 +466,11 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 24,
     borderRadius: 28,
     overflow: 'hidden',
-    elevation: 12,
+    elevation: 15,
+    zIndex: 999,
     shadowColor: '#ff4757',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,

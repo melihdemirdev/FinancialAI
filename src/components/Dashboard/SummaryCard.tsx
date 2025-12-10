@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { formatCurrency } from '../../utils/formatters';
 
 interface SummaryCardProps {
   title: string;
@@ -82,7 +83,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         {getIcon()}
       </View>
       <Text style={[styles.cardValue, { color: getValueColor() }]}>
-        {currencySymbol}{value.toFixed(2)}
+        {formatCurrency(value, currencySymbol)}
       </Text>
     </View>
   );

@@ -81,8 +81,8 @@ const parseCfoText = (text: string): CfoAnalysisResult => {
   };
 };
 
-export async function generateCfoAnalysis(input: CfoAnalysisInput): Promise<CfoAnalysisResult> {
-  const apiKey = AI_CONFIG.gemini.apiKey;
+export async function generateCfoAnalysis(input: CfoAnalysisInput, customApiKey?: string): Promise<CfoAnalysisResult> {
+  const apiKey = customApiKey || AI_CONFIG.gemini.apiKey;
   if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
     throw new Error('Gemini API anahtarı bulunamadı. .env içine EXPO_PUBLIC_GEMINI_API_KEY ekleyin.');
   }
@@ -116,7 +116,25 @@ export async function generateCfoAnalysis(input: CfoAnalysisInput): Promise<CfoA
   if (!res.ok) {
     const errorText = await res.text().catch(() => 'Hata detayı alınamadı');
     console.error(`Gemini Error (${res.status}):`, errorText);
-    throw new Error(`Gemini isteği başarısız (${res.status}): ${errorText}`);
+
+    // Quota ve rate limit hatalarını yakala
+    if (res.status === 429) {
+      throw new Error('Çok fazla istek gönderildi. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+    }
+
+    if (errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('quota')) {
+      throw new Error('API kotanız doldu. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin.');
+    }
+
+    if (res.status === 503 || errorText.includes('overloaded')) {
+      throw new Error('Servis şu anda meşgul. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+    }
+
+    if (res.status === 400 && errorText.includes('API_KEY')) {
+      throw new Error('API anahtarınız geçersiz. Lütfen ayarlardan kontrol edin.');
+    }
+
+    throw new Error(`Gemini isteği başarısız (${res.status}). Lütfen tekrar deneyin.`);
   }
 
   const data = await res.json();
@@ -130,9 +148,10 @@ export async function generateCfoAnalysis(input: CfoAnalysisInput): Promise<CfoA
 
 export async function generateCfoAnalysisStream(
   input: CfoAnalysisInput,
-  onToken: (partial: string) => void
+  onToken: (partial: string) => void,
+  customApiKey?: string
 ): Promise<CfoAnalysisResult> {
-  const apiKey = AI_CONFIG.gemini.apiKey;
+  const apiKey = customApiKey || AI_CONFIG.gemini.apiKey;
   if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
     throw new Error('Gemini API anahtarı bulunamadı. .env içine EXPO_PUBLIC_GEMINI_API_KEY ekleyin.');
   }
@@ -164,8 +183,27 @@ export async function generateCfoAnalysisStream(
   );
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Gemini isteği başarısız (${res.status}): ${text || 'bilinmeyen hata'}`);
+    const errorText = await res.text();
+    console.error(`Gemini Error (${res.status}):`, errorText);
+
+    // Quota ve rate limit hatalarını yakala
+    if (res.status === 429) {
+      throw new Error('Çok fazla istek gönderildi. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+    }
+
+    if (errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('quota')) {
+      throw new Error('API kotanız doldu. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin.');
+    }
+
+    if (res.status === 503 || errorText.includes('overloaded')) {
+      throw new Error('Servis şu anda meşgul. Lütfen birkaç saniye bekleyip tekrar deneyin.');
+    }
+
+    if (res.status === 400 && errorText.includes('API_KEY')) {
+      throw new Error('API anahtarınız geçersiz. Lütfen ayarlardan kontrol edin.');
+    }
+
+    throw new Error(`Gemini isteği başarısız (${res.status}). Lütfen tekrar deneyin.`);
   }
 
   if (!res.body || typeof (res.body as any).getReader !== 'function') {

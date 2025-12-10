@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,16 +6,23 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Animated,
+  Pressable,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import Markdown from 'react-native-markdown-display';
 import { useFinanceStore } from "../store/useFinanceStore";
 import { useTheme } from "../context/ThemeContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useApiKey } from "../context/ApiKeyContext";
+import { useProfile } from "../context/ProfileContext";
 import { gradients } from "../theme/colors";
-import { Wallet, TrendingUp, TrendingDown, PieChart, Sparkles, BarChart3 } from "lucide-react-native";
-import { generateCfoAnalysis } from "../services/geminiClient";
+import { Wallet, TrendingUp, TrendingDown, PieChart, Sparkles, BarChart3, Lightbulb, Target, AlertCircle } from "lucide-react-native";
+import { geminiService } from "../services/geminiService";
 import { CFOReportModal } from "../components/CFOReport/CFOReportModal";
 import { FinancialCharts } from "../components/Charts/FinancialCharts";
+import { formatCurrency, formatNumber, formatPercentage, formatCurrencySmart } from "../utils/formatters";
 
 export const DashboardScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
@@ -28,8 +35,14 @@ export const DashboardScreen = () => {
     rawText: string;
   } | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
+  const { getActiveApiKey } = useApiKey();
+  const { profile } = useProfile();
+
+  // Tilt animation
+  const tiltAnim = useRef(new Animated.Value(0)).current;
 
   const {
     assets,
@@ -55,52 +68,403 @@ export const DashboardScreen = () => {
     [installments]
   );
 
+  // Son CFO analizini yükle
+  useEffect(() => {
+    loadLastCFOAnalysis();
+  }, []);
+
+  const loadLastCFOAnalysis = async () => {
+    try {
+      const savedAnalysis = await AsyncStorage.getItem('@last_cfo_analysis');
+      if (savedAnalysis) {
+        const parsed = JSON.parse(savedAnalysis);
+        setAiResult(parsed);
+      }
+    } catch (error) {
+      console.log('CFO analizi yüklenemedi:', error);
+    }
+  };
+
+  const saveCFOAnalysis = async (analysis: any) => {
+    try {
+      await AsyncStorage.setItem('@last_cfo_analysis', JSON.stringify(analysis));
+    } catch (error) {
+      console.log('CFO analizi kaydedilemedi:', error);
+    }
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   };
 
+  // Tüm finansal önerileri hesapla
+  const getAllFinancialTips = () => {
+    const debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
+    const tips = [];
+
+    // Borç oranı yüksekse
+    if (debtRatio > 50) {
+      tips.push({
+        icon: AlertCircle,
+        color: '#F59E0B',
+        gradient: ['#F59E0B', '#F97316'],
+        title: 'Borç Oranınız Yüksek',
+        description: `Toplam borçlarınız varlıklarınızın %${debtRatio.toFixed(0)}'ini oluşturuyor. Öncelikle borç azaltmaya odaklanın.`,
+      });
+    }
+
+    // Güvenli harcama yüksekse
+    if (safeToSpend > totalAssets * 0.3 && totalAssets > 0) {
+      tips.push({
+        icon: Target,
+        color: '#10B981',
+        gradient: ['#10B981', '#059669'],
+        title: 'Yatırım Zamanı',
+        description: `${formatCurrencySmart(safeToSpend, currencySymbol)} güvenli harcama limitiniz var. Bir kısmını yatırıma yönlendirebilirsiniz.`,
+      });
+    }
+
+    // Alacaklar fazlaysa
+    if (totalReceivables > totalAssets * 0.2 && totalReceivables > 0) {
+      tips.push({
+        icon: TrendingUp,
+        color: '#06B6D4',
+        gradient: ['#06B6D4', '#0891B2'],
+        title: 'Alacak Takibi',
+        description: `${formatCurrencySmart(totalReceivables, currencySymbol)} alacağınız var. Tahsilatlarınızı takip etmeyi unutmayın.`,
+      });
+    }
+
+    // Net değer pozitif ve iyi durumda
+    if (netWorth > 0 && debtRatio < 30) {
+      tips.push({
+        icon: Lightbulb,
+        color: '#8B5CF6',
+        gradient: gradients.purple,
+        title: 'Harika Gidiyorsunuz!',
+        description: `Net değeriniz ${formatCurrencySmart(netWorth, currencySymbol)}. Finansal hedeflerinize düzenli tasarrufla devam edin.`,
+      });
+    }
+
+    // Taksit yükü yüksekse
+    if (totalInstallments > safeToSpend * 0.5 && totalInstallments > 0) {
+      tips.push({
+        icon: AlertCircle,
+        color: '#EF4444',
+        gradient: ['#EF4444', '#DC2626'],
+        title: 'Taksit Yükü Ağır',
+        description: `Aylık ${formatCurrencySmart(totalInstallments, currencySymbol)} taksitiniz var. Yeni borçlanmadan kaçının.`,
+      });
+    }
+
+    // Ek genel öneriler (her zaman göster)
+    tips.push({
+      icon: Lightbulb,
+      color: '#8B5CF6',
+      gradient: gradients.purple,
+      title: 'Acil Durum Fonu',
+      description: '3-6 aylık giderinizi karşılayacak bir acil durum fonu oluşturmayı hedefleyin. Beklenmedik durumlar için hazırlıklı olun.',
+    });
+
+    tips.push({
+      icon: Target,
+      color: '#10B981',
+      gradient: ['#10B981', '#059669'],
+      title: 'Bütçe Planlama',
+      description: '50/30/20 kuralını deneyin: Gelirinizin %50 ihtiyaçlara, %30 isteklere, %20 tasarrufa ayırın.',
+    });
+
+    tips.push({
+      icon: TrendingUp,
+      color: '#06B6D4',
+      gradient: ['#06B6D4', '#0891B2'],
+      title: 'Uzun Vadeli Düşünün',
+      description: 'Emeklilik planlamasına erken başlamak, bileşik faizin gücünden maksimum yararlanmanızı sağlar.',
+    });
+
+    tips.push({
+      icon: Lightbulb,
+      color: '#F59E0B',
+      gradient: ['#F59E0B', '#F97316'],
+      title: 'Küçük Tasarruflar Büyük Sonuçlar',
+      description: 'Günde sadece 50₺ tasarruf etseniz, yılda 18.250₺ biriktirebilirsiniz. Her küçük adım önemli!',
+    });
+
+    tips.push({
+      icon: Target,
+      color: '#8B5CF6',
+      gradient: gradients.purple,
+      title: 'Otomatik Tasarruf',
+      description: 'Maaş gününüzde otomatik olarak bir miktar paranızı tasarruf hesabına aktarın. Görmediğiniz parayı harcamazsınız.',
+    });
+
+    tips.push({
+      icon: AlertCircle,
+      color: '#EF4444',
+      gradient: ['#EF4444', '#DC2626'],
+      title: 'Kredi Kartı Faizi Tuzağı',
+      description: 'Kredi kartı borcunuzu minimum ödemeyle kapatmayın. Faiz oranları %40\'a kadar çıkabilir!',
+    });
+
+    tips.push({
+      icon: TrendingUp,
+      color: '#10B981',
+      gradient: ['#10B981', '#059669'],
+      title: 'Çeşitlendirme Önemlidir',
+      description: 'Tüm yumurtalarınızı bir sepete koymayın. Yatırımlarınızı farklı alanlara dağıtarak riski azaltın.',
+    });
+
+    tips.push({
+      icon: Lightbulb,
+      color: '#06B6D4',
+      gradient: ['#06B6D4', '#0891B2'],
+      title: 'Enflasyon Etkisi',
+      description: 'Paranızı sadece banka hesabında tutmak, enflasyon nedeniyle değer kaybetmesine neden olur. Yatırım yapın!',
+    });
+
+    tips.push({
+      icon: Target,
+      color: '#F59E0B',
+      gradient: ['#F59E0B', '#F97316'],
+      title: '24 Saat Kuralı',
+      description: 'Büyük alışverişlerden önce 24 saat bekleyin. Bu, dürtüsel harcamaları %70 oranında azaltır.',
+    });
+
+    tips.push({
+      icon: Lightbulb,
+      color: '#8B5CF6',
+      gradient: gradients.purple,
+      title: 'Sigorta İhmali',
+      description: 'Sağlık, hayat ve kasko sigortalarınızı ihmal etmeyin. Küçük primler, büyük felaketlere karşı korur.',
+    });
+
+    tips.push({
+      icon: TrendingUp,
+      color: '#10B981',
+      gradient: ['#10B981', '#059669'],
+      title: 'Pasif Gelir Yaratın',
+      description: 'Kira geliri, temettü hisseleri veya online içerik gibi pasif gelir kaynakları oluşturmayı hedefleyin.',
+    });
+
+    tips.push({
+      icon: Target,
+      color: '#06B6D4',
+      gradient: ['#06B6D4', '#0891B2'],
+      title: 'Finansal Eğitim',
+      description: 'Ayda en az bir finansal kitap okuyun veya podcast dinleyin. Bilgi, en değerli yatırımdır.',
+    });
+
+    tips.push({
+      icon: Lightbulb,
+      color: '#EF4444',
+      gradient: ['#EF4444', '#DC2626'],
+      title: 'Abonelik Kontrol',
+      description: 'Kullanmadığınız abonelikleri iptal edin. Ortalama kişi ayda 200₺+ gereksiz abonelik için ödüyor.',
+    });
+
+    tips.push({
+      icon: Target,
+      color: '#10B981',
+      gradient: ['#10B981', '#059669'],
+      title: 'Hedefinizi Belirleyin',
+      description: 'Kısa, orta ve uzun vadeli finansal hedefler belirleyin. Net hedefler, motivasyonu artırır.',
+    });
+
+    tips.push({
+      icon: TrendingUp,
+      color: '#8B5CF6',
+      gradient: gradients.purple,
+      title: 'Zam Kuralı',
+      description: 'Maaşınız arttığında, artışın en az yarısını tasarrufa yönlendirin. Yaşam standardınızı her zaman artırmayın.',
+    });
+
+    // En az bir öneri olmalı
+    if (tips.length === 0) {
+      tips.push({
+        icon: Lightbulb,
+        color: '#8B5CF6',
+        gradient: gradients.purple,
+        title: 'Finansal Planınızı Güçlendirin',
+        description: 'Düzenli tasarruf yaparak ve harcamalarınızı takip ederek mali durumunuzu iyileştirebilirsiniz.',
+      });
+    }
+
+    return tips;
+  };
+
+  const allTips = useMemo(() => getAllFinancialTips(), [
+    totalAssets,
+    totalLiabilities,
+    netWorth,
+    safeToSpend,
+    totalReceivables,
+    totalInstallments,
+    currencySymbol,
+  ]);
+
+  const currentTip = allTips[currentTipIndex];
+
+  // Her 10 saniyede bir sonraki öneriye geç
+  useEffect(() => {
+    if (allTips.length <= 1) return; // Tek öneri varsa döndürme
+
+    const interval = setInterval(() => {
+      setCurrentTipIndex((prevIndex) => (prevIndex + 1) % allTips.length);
+    }, 10000); // 10 saniye
+
+    return () => clearInterval(interval);
+  }, [allTips.length]);
+
+  // Manuel olarak sonraki öneriye geç
+  const handleTipPress = () => {
+    if (allTips.length > 1) {
+      setCurrentTipIndex((prevIndex) => (prevIndex + 1) % allTips.length);
+    }
+  };
+
+  const handleHeroPress = () => {
+    Animated.sequence([
+      Animated.timing(tiltAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tiltAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const tiltInterpolate = tiltAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '8deg'],
+  });
+
+  const parseCfoReport = (rawText: string) => {
+    // Markdown başlıklarını da destekleyecek şekilde daha esnek pattern
+    const summaryMatch = rawText.match(/\*?\*?Yönetici Özeti:?\*?\*?\s*([\s\S]*?)(?=\*?\*?Finansal Sağlık Notu|\*?\*?Detaylı Analiz|\*?\*?Stratejik Öneriler|$)/i);
+    const risksMatch = rawText.match(/\*?\*?Potansiyel Riskler:?\*?\*?\s*([\s\S]*?)(?=\*?\*?Stratejik Öneriler|\*?\*?Sonuç ve Genel|$)/i);
+    const actionsMatch = rawText.match(/\*?\*?Stratejik Öneriler:?\*?\*?\s*([\s\S]*?)(?=\*?\*?Potansiyel Riskler|\*?\*?Sonuç ve Genel|$)/i);
+
+    const parseList = (text: string | undefined) => {
+      if (!text) return [];
+
+      const lines = text.split('\n');
+      const items: string[] = [];
+      let currentItem = '';
+      let inItem = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Boş satırları atla
+        if (!line) continue;
+
+        // Ana başlıkları atla (**Kısa Vade:**, **Orta Vade:** gibi)
+        if (line.match(/^\*\*[A-Za-zÇçĞğİıÖöŞşÜü\s]+(\(\d+-?\d*\s*[a-z]*\))?:?\*\*$/)) {
+          continue;
+        }
+
+        // Yeni madde başlangıcı mı kontrol et (1. veya * veya - ile başlıyor mu?)
+        const isNewItem = line.match(/^[\*\-•]\s+/) || line.match(/^\d+\.\s+/);
+
+        if (isNewItem) {
+          // Önceki maddeyi kaydet
+          if (inItem && currentItem.trim()) {
+            items.push(currentItem.trim());
+          }
+
+          // Yeni maddeyi başlat - madde işareti/numarayı kaldır
+          currentItem = line.replace(/^[\*\-•]\s+/, '').replace(/^\d+\.\s+/, '');
+          inItem = true;
+        } else if (inItem) {
+          // Devam eden satır - mevcut maddeye ekle
+          currentItem += ' ' + line;
+        }
+      }
+
+      // Son maddeyi kaydet
+      if (inItem && currentItem.trim()) {
+        items.push(currentItem.trim());
+      }
+
+      // İçerikleri temizle ve filtrele
+      return items
+        .map(item => {
+          // Başındaki ve sonundaki gereksiz karakterleri temizle
+          let cleaned = item.trim();
+
+          // Kalın yazı işaretlerini temizle (başlangıç kısmında varsa)
+          cleaned = cleaned.replace(/^\*\*([^*]+)\*\*:?\s*/, '$1: ');
+
+          return cleaned;
+        })
+        .filter(item => {
+          // En az 10 karakter olmalı (çok kısa anlamsız parçaları filtrele)
+          if (item.length < 10) return false;
+
+          // Sadece noktalama işareti veya sayı içermemeli
+          if (item.match(/^[\d\s\.,;:\-–—]+$/)) return false;
+
+          return true;
+        });
+    };
+
+    return {
+      summary: summaryMatch ? summaryMatch[1].trim() : rawText,
+      risks: parseList(risksMatch ? risksMatch[1] : ''),
+      actions: parseList(actionsMatch ? actionsMatch[1] : ''),
+      rawText,
+    };
+  };
+  
   const handleAiAnalyze = async () => {
     setAiLoading(true);
     setAiError(null);
     setAiResult(null);
     try {
-      const ratios = {
-        debtToAsset: totalAssets > 0 ? totalLiabilities / totalAssets : 0,
-        liquidity: totalLiabilities > 0 ? safeToSpend / totalLiabilities : 0,
-        installmentBurden: totalAssets > 0 ? totalInstallments / totalAssets : 0,
-      };
-
-      const payload = {
-        totals: {
-          assets: totalAssets,
-          liabilities: totalLiabilities,
-          receivables: totalReceivables,
-          installments: totalInstallments,
-          netWorth,
-          safeToSpend,
-        },
-        ratios,
-        counts: {
-          assetCount: assets.length,
-          liabilityCount: liabilities.length,
-          receivableCount: receivables.length,
-          installmentCount: installments.length,
-        },
-        sampleItems: {
-          assets,
-          liabilities,
-          receivables,
-          installments,
-        },
+      const reportContext = {
+        totalAssets,
+        totalLiabilities,
+        netWorth,
+        safeToSpend,
+        totalReceivables,
+        totalInstallments,
         currencySymbol,
+        findeksScore: profile.findeksScore,
+        salary: profile.salary,
+        additionalIncome: profile.additionalIncome,
       };
 
-      const analysis = await generateCfoAnalysis(payload);
-      setAiResult(analysis);
-      setShowReport(true);
+      const response = await geminiService.generateCfoReport(reportContext);
+      
+      if (response.success && response.content) {
+        const analysis = parseCfoReport(response.content);
+        setAiResult(analysis);
+        await saveCFOAnalysis(analysis); // Analizi kaydet
+        setShowReport(true);
+      } else {
+        throw new Error(response.error || "AI analizi başarısız oldu.");
+      }
+
     } catch (error: any) {
-      setAiError(error?.message || "AI analizi başarısız.");
+      const errorMsg = error?.message || "AI analizi başarısız.";
+
+      // Kullanıcı dostu hata mesajları
+      if (errorMsg.includes('quota') || errorMsg.includes('RESOURCE_EXHAUSTED')) {
+        setAiError('📊 API kotanız doldu. Lütfen daha sonra tekrar deneyin.');
+      } else if (errorMsg.includes('429')) {
+        setAiError('⏱️ Çok fazla istek. Birkaç saniye bekleyip tekrar deneyin.');
+      } else if (errorMsg.includes('503') || errorMsg.includes('overloaded')) {
+        setAiError('🔧 Servis meşgul. Lütfen kısa bir süre sonra tekrar deneyin.');
+      } else if (errorMsg.includes('API_KEY') || errorMsg.includes('Invalid')) {
+        setAiError('🔑 API anahtarı geçersiz. Ayarlardan kontrol edin.');
+      } else {
+        setAiError(errorMsg);
+      }
     } finally {
       setAiLoading(false);
     }
@@ -131,22 +495,70 @@ export const DashboardScreen = () => {
           </View>
         </View>
 
-        <View style={styles.heroCardContainer}>
-          <LinearGradient colors={gradients.purple} style={styles.heroCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <View style={styles.heroContent}>
-              <View style={styles.heroHeader}>
-                <View style={styles.heroIconContainer}>
-                  <Wallet size={24} color="rgba(255, 255, 255, 0.95)" strokeWidth={2.5} />
+        <Pressable onPress={handleHeroPress} style={styles.heroCardContainer}>
+          <Animated.View
+            style={[
+              styles.heroCardWrapper,
+              {
+                transform: [
+                  { perspective: 800 },
+                  { rotateX: tiltInterpolate },
+                  { rotateY: tiltAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '-8deg'],
+                  })},
+                  { scale: tiltAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.02],
+                  })},
+                ],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={['#9333EA', '#7C3AED', '#6D28D9']}
+              style={styles.heroCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.heroContent}>
+                <View style={styles.heroHeader}>
+                  <View style={styles.heroIconContainer}>
+                    <Wallet size={24} color="rgba(255, 255, 255, 0.95)" strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.heroLabel}>Harcayabileceğiniz</Text>
                 </View>
-                <Text style={styles.heroLabel}>Harcayabileceğiniz</Text>
+                <Text style={styles.heroValue}>{formatCurrencySmart(safeToSpend, currencySymbol)}</Text>
+                <Text style={styles.heroSubtext}>Güvenli harcama limitiniz</Text>
               </View>
-              <Text style={styles.heroValue}>{currencySymbol}{safeToSpend.toFixed(2)}</Text>
-              <Text style={styles.heroSubtext}>Güvenli harcama limitiniz</Text>
+              <View style={styles.decorativeCircle1} />
+              <View style={styles.decorativeCircle2} />
+              <View style={styles.decorativeCircle3} />
+            </LinearGradient>
+          </Animated.View>
+        </Pressable>
+
+        {/* Finansal Öneri Banner */}
+        <TouchableOpacity
+          style={styles.tipBannerContainer}
+          onPress={handleTipPress}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={currentTip.gradient}
+            style={styles.tipBanner}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.tipIconContainer}>
+              {React.createElement(currentTip.icon, { size: 24, color: "#FFFFFF", strokeWidth: 2.5 })}
             </View>
-            <View style={styles.decorativeCircle1} />
-            <View style={styles.decorativeCircle2} />
+            <View style={styles.tipContent}>
+              <Text style={styles.tipTitle}>{currentTip.title}</Text>
+              <Text style={styles.tipDescription}>{currentTip.description}</Text>
+            </View>
           </LinearGradient>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.overviewSection}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Finansal Durum</Text>
@@ -157,7 +569,7 @@ export const DashboardScreen = () => {
                   <TrendingUp size={20} color={colors.success} strokeWidth={2.5} />
                 </View>
                 <Text style={[styles.miniCardLabel, { color: colors.text.secondary }]}>Toplam Varlıklar</Text>
-                <Text style={[styles.miniCardValue, { color: colors.success }]}>{currencySymbol}{totalAssets.toFixed(2)}</Text>
+                <Text style={[styles.miniCardValue, { color: colors.success }]}>{formatCurrencySmart(totalAssets, currencySymbol)}</Text>
               </View>
 
               <View style={[styles.miniCard, { backgroundColor: colors.cardBackground }]}>
@@ -165,7 +577,7 @@ export const DashboardScreen = () => {
                   <TrendingDown size={20} color={colors.error} strokeWidth={2.5} />
                 </View>
                 <Text style={[styles.miniCardLabel, { color: colors.text.secondary }]}>Toplam Borçlar</Text>
-                <Text style={[styles.miniCardValue, { color: colors.error }]}>{currencySymbol}{totalLiabilities.toFixed(2)}</Text>
+                <Text style={[styles.miniCardValue, { color: colors.error }]}>{formatCurrencySmart(totalLiabilities, currencySymbol)}</Text>
               </View>
             </View>
 
@@ -177,7 +589,7 @@ export const DashboardScreen = () => {
                 <Text style={[styles.miniCardLabel, { color: colors.text.secondary }]}>Net Değeriniz</Text>
               </View>
               <Text style={[styles.netWorthValue, { color: netWorth >= 0 ? colors.success : colors.error }]}>
-                {currencySymbol}{netWorth.toFixed(2)}
+                {formatCurrencySmart(netWorth, currencySymbol)}
               </Text>
             </View>
           </View>
@@ -197,7 +609,7 @@ export const DashboardScreen = () => {
                 </View>
               </View>
               <Text style={[styles.analyticsValue, { color: colors.purple.light }]}>
-                {totalLiabilities > 0 ? (totalAssets / totalLiabilities).toFixed(2) : "∞"}
+                {totalLiabilities > 0 ? formatNumber(totalAssets / totalLiabilities, 2) : "∞"}
               </Text>
               <View style={[styles.analyticsBar, { backgroundColor: "rgba(147, 51, 234, 0.2)" }]}>
                 <View
@@ -220,7 +632,7 @@ export const DashboardScreen = () => {
                 </View>
               </View>
               <Text style={[styles.analyticsValue, { color: colors.accent.cyan }]}>
-                {totalAssets > 0 ? `${((totalLiabilities / totalAssets) * 100).toFixed(1)}%` : "0%"}
+                {totalAssets > 0 ? formatPercentage((totalLiabilities / totalAssets) * 100, 1) : "%0"}
               </Text>
               <View style={[styles.analyticsBar, { backgroundColor: "rgba(6, 182, 212, 0.2)" }]}>
                 <View
@@ -261,39 +673,123 @@ export const DashboardScreen = () => {
               </View>
               <Text style={[styles.aiTitle, { color: colors.text.primary }]}>Yapay CFO Analizi</Text>
             </View>
-            <Text style={[styles.aiSubtitle, { color: colors.text.secondary }]}>Gemini'den kısa bir CFO yorumu al.</Text>
+            <Text style={[styles.aiSubtitle, { color: colors.text.secondary }]}>
+              {aiResult ? "Son analiziniz aşağıda. Yeni analiz için tıklayın." : "Gemini'den kısa bir CFO yorumu al."}
+            </Text>
             <TouchableOpacity
               style={[styles.aiButton, { backgroundColor: colors.purple.primary }]}
               onPress={handleAiAnalyze}
               disabled={aiLoading}
             >
-              <Text style={styles.aiButtonText}>{aiLoading ? "Analiz ediliyor..." : "Analiz al"}</Text>
+              <Text style={styles.aiButtonText}>
+                {aiLoading ? "Analiz ediliyor..." : aiResult ? "Yeni Analiz Al" : "Analiz Al"}
+              </Text>
             </TouchableOpacity>
             {aiError ? <Text style={[styles.aiError, { color: colors.error }]}>{aiError}</Text> : null}
             {aiResult ? (
               <View style={styles.aiResult}>
-                <Text style={[styles.aiResultTitle, { color: colors.text.primary }]}>{aiResult.summary}</Text>
-                {aiResult.risks.length ? (
+                <Markdown
+                  style={{
+                    body: {
+                      color: colors.text.primary,
+                      fontSize: 15,
+                      lineHeight: 22,
+                      marginBottom: 12
+                    },
+                    strong: {
+                      color: colors.text.primary,
+                      fontWeight: '700'
+                    },
+                    paragraph: {
+                      marginTop: 0,
+                      marginBottom: 8
+                    },
+                    text: {
+                      color: colors.text.primary
+                    },
+                    bullet_list: {
+                      marginBottom: 8
+                    },
+                    list_item: {
+                      marginBottom: 4
+                    }
+                  }}
+                >
+                  {aiResult.summary}
+                </Markdown>
+                {aiResult.risks.length > 0 && (
                   <View style={styles.aiList}>
+                    <Text style={[styles.aiSectionTitle, { color: colors.error }]}>⚠️ Riskler:</Text>
                     {aiResult.risks.map((item, idx) => (
-                      <Text key={`risk-${idx}`} style={[styles.aiListItem, { color: colors.text.secondary }]}>
-                        • {item}
-                      </Text>
+                      <View key={`risk-${idx}`} style={{ flex: 1 }}>
+                        <Markdown
+                          style={{
+                            body: {
+                              color: colors.text.secondary,
+                              fontSize: 13,
+                              lineHeight: 18
+                            },
+                            strong: {
+                              color: colors.text.primary,
+                              fontWeight: '700'
+                            },
+                            paragraph: {
+                              marginTop: 0,
+                              marginBottom: 4
+                            }
+                          }}
+                        >
+                          {`• ${item}`}
+                        </Markdown>
+                      </View>
                     ))}
                   </View>
-                ) : null}
-                {aiResult.actions.length ? (
+                )}
+                {aiResult.actions.length > 0 && (
                   <View style={styles.aiList}>
+                    <Text style={[styles.aiSectionTitle, { color: colors.success }]}>✓ Öneriler:</Text>
                     {aiResult.actions.map((item, idx) => (
-                      <Text key={`action-${idx}`} style={[styles.aiListItem, { color: colors.text.secondary }]}>
-                        → {item}
-                      </Text>
+                      <View key={`action-${idx}`} style={{ flex: 1 }}>
+                        <Markdown
+                          style={{
+                            body: {
+                              color: colors.text.secondary,
+                              fontSize: 13,
+                              lineHeight: 18
+                            },
+                            strong: {
+                              color: colors.text.primary,
+                              fontWeight: '700'
+                            },
+                            paragraph: {
+                              marginTop: 0,
+                              marginBottom: 4
+                            }
+                          }}
+                        >
+                          {`→ ${item}`}
+                        </Markdown>
+                      </View>
                     ))}
                   </View>
-                ) : null}
-                {!aiResult.risks.length && !aiResult.actions.length && aiResult.rawText ? (
-                  <Text style={[styles.aiListItem, { color: colors.text.secondary }]}>{aiResult.rawText}</Text>
-                ) : null}
+                )}
+                {!aiResult.risks.length && !aiResult.actions.length && aiResult.rawText && (
+                  <Markdown
+                    style={{
+                      body: {
+                        color: colors.text.secondary,
+                        fontSize: 13,
+                        lineHeight: 18
+                      },
+                      paragraph: {
+                        marginTop: 0,
+                        marginBottom: 8
+                      }
+                    }}
+                  >
+                    {aiResult.rawText}
+                  </Markdown>
+                )}
                 <TouchableOpacity
                   style={[styles.reportButton, { borderColor: colors.purple.primary }]}
                   onPress={() => setShowReport(true)}
@@ -317,6 +813,9 @@ export const DashboardScreen = () => {
           safeToSpend,
           totalReceivables,
           totalInstallments,
+          findeksScore: profile.findeksScore,
+          salary: profile.salary,
+          additionalIncome: profile.additionalIncome,
         }}
       />
     </View>
@@ -364,13 +863,15 @@ const styles = StyleSheet.create({
   },
   heroCardContainer: {
     marginBottom: 28,
+  },
+  heroCardWrapper: {
     borderRadius: 28,
     overflow: "hidden",
     shadowColor: "#9333EA",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 16,
   },
   heroCard: {
     padding: 32,
@@ -430,6 +931,80 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     bottom: -30,
     left: -30,
+  },
+  decorativeCircle3: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    top: 100,
+    right: 20,
+  },
+  tipBannerContainer: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  tipBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    paddingBottom: 32,
+    gap: 16,
+  },
+  tipIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  tipDescription: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: 18,
+    letterSpacing: 0.1,
+  },
+  tipIndicators: {
+    position: "absolute",
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  tipIndicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+  },
+  tipIndicatorDotActive: {
+    width: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
   },
   overviewSection: {
     marginBottom: 28,
@@ -619,8 +1194,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.2,
   },
+  aiSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 8,
+    marginBottom: 4,
+    letterSpacing: 0.1,
+  },
   aiList: {
     gap: 4,
+    marginTop: 4,
   },
   aiListItem: {
     fontSize: 13,

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -11,18 +12,71 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
-import { Send, Bot, Trash2 } from 'lucide-react-native';
+import { Send, Bot, Trash2, AlertCircle, WifiOff, Key } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Markdown from 'react-native-markdown-display';
 import { useTheme } from '../context/ThemeContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useApiKey } from '../context/ApiKeyContext';
+import { useProfile } from '../context/ProfileContext';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { aiChatService, ChatMessage, FinancialContext } from '../services/aiChatService';
+import { AIChatService, ChatMessage, FinancialContext } from '../services/aiChatService';
 
 export const ChatScreen = () => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
+  const { getActiveApiKey } = useApiKey();
+  const { profile } = useProfile(); // Profil verilerini al
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const aiChatServiceRef = useRef<AIChatService | null>(null);
+
+  // Markdown stilleri
+  const markdownStyles = {
+    body: { color: colors.text.primary, fontSize: 15, lineHeight: 22 },
+    paragraph: { marginTop: 0, marginBottom: 8 },
+    strong: { fontWeight: '700', color: colors.purple.light },
+    em: { fontStyle: 'italic' },
+    bullet_list: { marginBottom: 8 },
+    ordered_list: { marginBottom: 8 },
+    list_item: { marginBottom: 4 },
+    code_inline: {
+      backgroundColor: colors.text.tertiary + '20',
+      color: colors.purple.light,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    code_block: {
+      backgroundColor: colors.text.tertiary + '15',
+      padding: 12,
+      borderRadius: 8,
+      marginVertical: 8,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 14,
+    },
+    fence: {
+      backgroundColor: colors.text.tertiary + '15',
+      padding: 12,
+      borderRadius: 8,
+      marginVertical: 8,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 14,
+    },
+    blockquote: {
+      backgroundColor: colors.text.tertiary + '10',
+      borderLeftWidth: 4,
+      borderLeftColor: colors.purple.light,
+      paddingLeft: 12,
+      paddingVertical: 8,
+      marginVertical: 8,
+    },
+    heading1: { fontSize: 20, fontWeight: '800', marginBottom: 8, color: colors.text.primary },
+    heading2: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: colors.text.primary },
+    heading3: { fontSize: 16, fontWeight: '600', marginBottom: 6, color: colors.text.primary },
+    link: { color: colors.purple.light, textDecorationLine: 'underline' },
+  };
 
   const {
     getTotalAssets,
@@ -39,12 +93,38 @@ export const ChatScreen = () => {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  // Initialize AI service with current API key
+  useEffect(() => {
+    const activeKey = getActiveApiKey();
+    if (!aiChatServiceRef.current) {
+      aiChatServiceRef.current = new AIChatService(activeKey);
+    } else {
+      aiChatServiceRef.current.updateApiKey(activeKey);
+    }
+  }, [getActiveApiKey]);
+
+  // Auto-scroll when streaming message updates
+  useEffect(() => {
+    if (streamingMessage) {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [streamingMessage]);
+
   useEffect(() => {
     // İlk karşılama mesajı
     const welcomeMsg: ChatMessage = {
       id: '0',
       role: 'assistant',
-      content: `Merhaba! Ben senin AI finansal danışmanınım 💰\n\nFinansal durumunu analiz edip sorularına yanıt verebilirim. Mesela:\n\n"iPhone alsam sorun olur mu?"\n"Tatile ne kadar harcayabilirim?"\n"Acil durum fonu nasıl oluştururum?"\n\nNe öğrenmek istersin?`,
+      content: `## Merhaba! 👋
+
+Ben senin **AI finansal danışmanınım**. Finansal durumunu analiz edip sorularına yanıt verebilirim.
+
+**Örnek Sorular:**
+• "iPhone alsam sorun olur mu?"
+• "Tatile ne kadar harcayabilirim?"
+• "Acil durum fonu nasıl oluştururum?"
+
+Ne öğrenmek istersin?`,
       timestamp: Date.now(),
     };
     setMessages([welcomeMsg]);
@@ -85,6 +165,9 @@ export const ChatScreen = () => {
       totalReceivables,
       totalInstallments,
       currencySymbol,
+      findeksScore: profile.findeksScore,
+      salary: profile.salary,
+      additionalIncome: profile.additionalIncome,
     };
   };
 
@@ -107,7 +190,7 @@ export const ChatScreen = () => {
       const context = buildContext();
       let fullResponse = '';
 
-      await aiChatService.sendMessage(userMessage.content, context, (chunk) => {
+      await aiChatServiceRef.current!.sendMessage(userMessage.content, context, (chunk) => {
         fullResponse += chunk;
         setStreamingMessage(fullResponse);
       });
@@ -122,13 +205,14 @@ export const ChatScreen = () => {
       setMessages((prev) => [...prev, assistantMessage]);
       setStreamingMessage('');
     } catch (error: any) {
-      const errorMessage: ChatMessage = {
+      const errorMessage = parseErrorMessage(error);
+      const aiErrorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Üzgünüm, bir hata oluştu: ${error.message || 'Bilinmeyen hata'}`,
+        content: errorMessage,
         timestamp: Date.now(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, aiErrorMessage]);
     } finally {
       setIsLoading(false);
       setTimeout(() => {
@@ -137,13 +221,47 @@ export const ChatScreen = () => {
     }
   };
 
+  const parseErrorMessage = (error: any): string => {
+    const errorStr = error.message || 'Bilinmeyen hata';
+
+    // Error type ve mesajı ayır
+    if (errorStr.includes('|')) {
+      const [type, message] = errorStr.split('|');
+
+      switch (type) {
+        case 'RATE_LIMIT':
+          return `## ⏱️ Çok Hızlısın!\n\n${message}\n\n**İpucu:** Birkaç saniye bekledikten sonra tekrar dene.`;
+
+        case 'QUOTA_EXCEEDED':
+          return `## 📊 Kota Doldu\n\n${message}\n\n**Çözüm:**\n• Birkaç dakika bekleyin\n• Veya yeni bir API anahtarı alın\n• [Google AI Studio](https://makersuite.google.com/app/apikey)`;
+
+        case 'SERVICE_UNAVAILABLE':
+          return `## 🔧 Servis Meşgul\n\n${message}\n\n**Not:** Bu geçici bir durum, lütfen kısa bir süre sonra tekrar deneyin.`;
+
+        case 'INVALID_API_KEY':
+          return `## 🔑 API Anahtarı Hatası\n\n${message}\n\n**Çözüm:**\n• Ayarlar → API Anahtarları bölümünden kontrol edin\n• Yeni bir anahtar oluşturun: [Google AI Studio](https://makersuite.google.com/app/apikey)`;
+
+        case 'API_ERROR':
+          return `## ⚠️ Bir Sorun Oluştu\n\n${message}\n\n**Öneriler:**\n• Mesajınızı kısaltıp tekrar deneyin\n• İnternet bağlantınızı kontrol edin`;
+
+        default:
+          return `## ⚠️ Bir Hata Oluştu\n\n${message}`;
+      }
+    }
+
+    // Fallback genel hata mesajı
+    return `## ⚠️ Bir Hata Oluştu\n\nÜzgünüm, bir sorun yaşadım: ${errorStr}\n\n**İpucu:** Tekrar denemek ister misin?`;
+  };
+
   const handleClearChat = () => {
-    aiChatService.clearHistory();
+    aiChatServiceRef.current?.clearHistory();
     setMessages([
       {
         id: '0',
         role: 'assistant',
-        content: `Chat temizlendi! Yeni bir konuşma başlatalım. Ne öğrenmek istersin?`,
+        content: `## Chat Temizlendi! ✨
+
+Yeni bir konuşma başlatalım. **Ne öğrenmek istersin?**`,
         timestamp: Date.now(),
       },
     ]);
@@ -175,7 +293,7 @@ export const ChatScreen = () => {
       <ScrollView
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={[styles.messagesContent, { paddingBottom: 80 }]}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: 140 }]} 
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
@@ -190,18 +308,19 @@ export const ChatScreen = () => {
                 : { backgroundColor: colors.cardBackground },
             ]}
           >
+            {message.role === 'user' ? (
+              <Text
+                style={[styles.messageText, { color: '#FFFFFF' }]}
+              >
+                {message.content}
+              </Text>
+            ) : (
+              <Markdown style={markdownStyles}>
+                {message.content}
+              </Markdown>
+            )}
             <Text
-              style={[
-                styles.messageText,
-                message.role === 'user'
-                  ? { color: '#FFFFFF' }
-                  : { color: colors.text.primary },
-              ]}
-            >
-              {message.content}
-            </Text>
-            <Text
-              style={[
+              style={[ 
                 styles.messageTime,
                 message.role === 'user'
                   ? { color: 'rgba(255, 255, 255, 0.7)' }
@@ -219,9 +338,9 @@ export const ChatScreen = () => {
         {/* Streaming mesaj */}
         {streamingMessage && (
           <View style={[styles.messageBubble, styles.assistantBubble, { backgroundColor: colors.cardBackground }]}>
-            <Text style={[styles.messageText, { color: colors.text.primary }]}>
+            <Markdown style={markdownStyles}>
               {streamingMessage}
-            </Text>
+            </Markdown>
           </View>
         )}
 
@@ -238,12 +357,12 @@ export const ChatScreen = () => {
         styles.inputContainer,
         {
           backgroundColor: colors.cardBackground,
-          paddingBottom: insets.bottom + 4,
-          marginBottom: keyboardHeight > 0 ? keyboardHeight + 10 : 35
+          paddingBottom: keyboardHeight > 0 ? 8 : insets.bottom + 4,
+          ...(keyboardHeight > 0 && { bottom: keyboardHeight + 50 })
         }
       ]}>
         <TextInput
-          style={[styles.input, { color: colors.text.primary, backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text.primary, backgroundColor: colors.background }]} 
           placeholder="Mesajını yaz..."
           placeholderTextColor={colors.text.tertiary}
           value={inputText}
@@ -315,7 +434,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '85%',
     padding: 14,
     borderRadius: 16,
     marginBottom: 12,
@@ -339,7 +458,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: '9%',
     left: 0,
     right: 0,
     flexDirection: 'row',

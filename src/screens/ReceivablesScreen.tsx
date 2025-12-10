@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MoreVertical, Edit, Trash2, TrendingUp, HandCoins, Plus, Calendar } from 'lucide-react-native';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +16,12 @@ import { useCurrency } from '../context/CurrencyContext';
 import { gradients } from '../theme/colors';
 import { AddReceivableModal } from '../components/Modals/AddReceivableModal';
 import { EditReceivableModal } from '../components/Modals/EditReceivableModal';
+import { formatCurrency } from '../utils/formatters';
 
 export const ReceivablesScreen = () => {
   const { colors } = useTheme();
   const { currencySymbol } = useCurrency(); // Get currency symbol from context
+  const insets = useSafeAreaInsets();
   const { receivables, addReceivable, updateReceivable, removeReceivable } = useFinanceStore();
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -80,7 +83,7 @@ export const ReceivablesScreen = () => {
               <View>
                 <Text style={styles.heroLabel}>Toplam Alacak</Text>
                 <Text style={styles.heroValue}>
-                  {currencySymbol}{totalReceivables.toFixed(2)}
+                  {formatCurrency(totalReceivables, currencySymbol)}
                 </Text>
               </View>
             </View>
@@ -121,7 +124,7 @@ export const ReceivablesScreen = () => {
 
             <View style={styles.cardBottom}>
               <Text style={[styles.cardValue, { color: colors.accent.cyan }]}>
-                {currencySymbol}{item.amount.toFixed(2)}
+                {formatCurrency(item.amount, currencySymbol)}
               </Text>
               {item.details && (
                 <Text style={[styles.cardDetails, { color: colors.text.secondary }]}>
@@ -180,7 +183,7 @@ export const ReceivablesScreen = () => {
 
       {/* FAB Button */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + 65 }]}
         onPress={() => setAddModalVisible(true)}
       >
         <LinearGradient
@@ -294,14 +297,14 @@ const styles = StyleSheet.create({
   list: {
     padding: 24,
     paddingTop: 16,
-    paddingBottom: 100,
+    paddingBottom: 200,
   },
 
   // Card Styles
   card: {
     borderRadius: 20,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -429,11 +432,11 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 24,
     borderRadius: 28,
     overflow: 'hidden',
-    elevation: 12,
+    elevation: 20,
+    zIndex: 999,
     shadowColor: '#06B6D4',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
   Image,
 } from 'react-native';
@@ -18,12 +17,15 @@ import { gradients } from '../theme/colors';
 import { User, Lock, Eye, EyeOff, ArrowRight, Shield, LogIn, UserRound } from 'lucide-react-native';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
+import { GoogleIcon } from '../components/GoogleIcon';
+import { useCustomAlert } from '../hooks/useCustomAlert';
 
 interface LoginScreenProps {}
 
 export const LoginScreen: React.FC<LoginScreenProps> = () => {
   const { colors } = useTheme();
   const { login, loginAsGuest } = useAuth();
+  const { showAlert, AlertComponent } = useCustomAlert();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,14 +36,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz.');
+      showAlert('Hata', 'Lütfen tüm alanları doldurunuz.', [{ text: 'Tamam' }], 'error');
       return;
     }
 
     // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Hata', 'Lütfen geçerli bir e-posta adresi giriniz.');
+      showAlert('Hata', 'Lütfen geçerli bir e-posta adresi giriniz.', [{ text: 'Tamam' }], 'error');
       return;
     }
 
@@ -50,20 +52,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     try {
       const success = await login(email, password);
       if (success) {
-        // Navigate to main app after successful login
-        // Instead of resetting, we'll let the auth state change handle navigation
-        Alert.alert('Giriş Başarılı', 'Hoş geldiniz!', [
-          { text: 'Tamam', onPress: () => {
-              // The AuthNavigator will automatically switch to AppStack due to auth state change
-              // No explicit navigation needed here
-            }
-          }
-        ]);
+        showAlert('Giriş Başarılı', 'Hoş geldiniz!', [{ text: 'Tamam' }], 'success');
       } else {
-        Alert.alert('Giriş Başarısız', 'Lütfen bilgilerinizi kontrol edin.');
+        showAlert('Giriş Başarısız', 'Lütfen bilgilerinizi kontrol edin.', [{ text: 'Tamam' }], 'error');
       }
     } catch (error) {
-      Alert.alert('Giriş Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+      showAlert('Giriş Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.', [{ text: 'Tamam' }], 'error');
     } finally {
       setIsLoading(false);
     }
@@ -75,18 +69,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     try {
       const success = await loginAsGuest();
       if (success) {
-        Alert.alert('Misafir Girişi', 'Misafir olarak giriş yapıldı!', [
-          { text: 'Tamam', onPress: () => {
-              // The AuthNavigator will automatically switch to AppStack due to auth state change
-              // No explicit navigation needed here
-            }
-          }
-        ]);
+        showAlert('Misafir Girişi', 'Misafir olarak giriş yapıldı!', [{ text: 'Tamam' }], 'success');
       } else {
-        Alert.alert('Misafir Girişi Başarısız', 'Misafir olarak giriş yapılamadı.');
+        showAlert('Misafir Girişi Başarısız', 'Misafir olarak giriş yapılamadı.', [{ text: 'Tamam' }], 'error');
       }
     } catch (error) {
-      Alert.alert('Misafir Girişi Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+      showAlert('Misafir Girişi Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.', [{ text: 'Tamam' }], 'error');
     } finally {
       setIsLoadingGuest(false);
     }
@@ -98,22 +86,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     // Simulate Google login process
     setTimeout(() => {
       setIsLoadingGoogle(false);
-      Alert.alert('Google ile Giriş', 'Google hesabınızla giriş yapıldı!', [
-        { text: 'Tamam', onPress: () => {
-            // The AuthNavigator will automatically switch to AppStack due to auth state change
-            // No explicit navigation needed here
-          }
-        }
-      ]);
+      showAlert('Google ile Giriş', 'Google hesabınızla giriş yapıldı!', [{ text: 'Tamam' }], 'success');
     }, 1000);
   };
 
   const handleForgotPassword = () => {
-    Alert.alert('Şifremi Unuttum', 'Lütfen destek ekibine başvurunuz.');
+    navigation.navigate('ForgotPassword' as never);
+  };
+
+  const handleRegister = () => {
+    navigation.navigate('Register' as never);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Full Screen Gradient Header */}
+      <LinearGradient
+        colors={gradients.purple}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerIcon}>
+              <Shield size={40} color="#FFFFFF" strokeWidth={2.5} />
+            </View>
+            <Text style={styles.headerTitle}>Financial AI</Text>
+            <Text style={styles.headerSubtitle}>Akıllı Finans Yönetimi</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -123,23 +127,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* Gradient Header */}
-          <View style={styles.headerContainer}>
-            <LinearGradient
-              colors={gradients.purple}
-              style={styles.headerGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.headerContent}>
-                <View style={styles.headerIcon}>
-                  <Shield size={32} color="#FFFFFF" strokeWidth={2.5} />
-                </View>
-                <Text style={styles.headerTitle}>Finansal AI</Text>
-                <Text style={styles.headerSubtitle}>Güvenli Giriş</Text>
-              </View>
-            </LinearGradient>
-          </View>
 
           {/* Login Form */}
           <View style={styles.formContainer}>
@@ -237,30 +224,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
 
             {/* Social Login Options */}
             <View style={styles.socialLoginContainer}>
-              {/* Google Login Button */}
+              {/* Google Login Button - Official Design */}
               <TouchableOpacity
-                style={styles.socialButton}
+                style={[styles.googleButton, { backgroundColor: '#FFFFFF', borderColor: colors.border.secondary }]}
                 onPress={handleGoogleLogin}
                 disabled={isLoadingGoogle}
+                activeOpacity={0.8}
               >
-                <LinearGradient
-                  colors={['#4285F4', '#34A853', '#FBBC05', '#EA4335']}
-                  style={styles.socialButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <View style={styles.socialButtonContent}>
-                    <View style={styles.googleLogoContainer}>
-                      <Image
-                        source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg' }}
-                        style={styles.googleLogo}
-                      />
-                    </View>
-                    <Text style={styles.socialButtonText}>
-                      {isLoadingGoogle ? 'Giriş Yapılıyor...' : 'Google ile Giriş'}
-                    </Text>
-                  </View>
-                </LinearGradient>
+                <View style={styles.googleButtonContent}>
+                  {/* Google Logo - Official */}
+                  <GoogleIcon size={20} />
+                  <Text style={styles.googleButtonText}>
+                    {isLoadingGoogle ? 'Giriş yapılıyor...' : 'Google ile giriş yap'}
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               {/* Guest Login Button */}
@@ -275,9 +252,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <View style={styles.socialButtonContent}>
+                  <View style={styles.guestButtonContent}>
                     <UserRound size={20} color="#FFFFFF" strokeWidth={2.5} />
-                    <Text style={styles.socialButtonText}>
+                    <Text style={styles.guestButtonText}>
                       {isLoadingGuest ? 'Giriş Yapılıyor...' : 'Misafir Olarak Devam Et'}
                     </Text>
                   </View>
@@ -290,16 +267,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
               <Text style={[styles.signupText, { color: colors.text.secondary }]}>
                 Hesabınız yok mu?
               </Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleRegister}>
                 <Text style={[styles.signupLink, { color: colors.purple.light }]}>
                   {' '}Kayıt Ol
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* Bottom Safe Area Spacer */}
+            <SafeAreaView edges={['bottom']}>
+              <View style={styles.bottomSpacer} />
+            </SafeAreaView>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      {/* Custom Alert */}
+      {AlertComponent}
+    </View>
   );
 };
 
@@ -307,52 +292,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerGradient: {
+    paddingBottom: 48,
+    shadowColor: '#9333EA',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  headerContent: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 12,
+  },
+  headerIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  headerTitle: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.95)',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
   },
-  headerContainer: {
-    overflow: 'hidden',
-    paddingTop: 50,
-    paddingBottom: 40,
-  },
-  headerGradient: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  headerContent: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
-    letterSpacing: 0.3,
-  },
   formContainer: {
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 32,
     flex: 1,
-    paddingBottom: 32, // Add padding at the bottom to account for safe area
+    paddingBottom: 32,
   },
   title: {
     fontSize: 32,
@@ -457,34 +451,32 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 24,
   },
-  socialButton: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  socialButtonGradient: {
+  // Google Button - Official Design Standards
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  socialButtonContent: {
+  googleButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
-  googleLogoContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  googleLogo: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3c4043',
+    letterSpacing: 0.3,
   },
   guestButton: {
     borderRadius: 20,
@@ -497,11 +489,21 @@ const styles = StyleSheet.create({
   },
   guestButtonGradient: {
     paddingVertical: 16,
+    paddingHorizontal: 20,
   },
-  socialButtonText: {
+  guestButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  guestButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  bottomSpacer: {
+    height: 20,
   },
 });

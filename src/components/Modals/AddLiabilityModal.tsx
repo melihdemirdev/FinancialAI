@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, CreditCard, TrendingDown, Check, Calendar, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { gradients } from '../../theme/colors';
 
 interface AddLiabilityModalProps {
@@ -31,6 +32,7 @@ interface AddLiabilityModalProps {
 
 export const AddLiabilityModal: React.FC<AddLiabilityModalProps> = ({ visible, onClose, onAdd }) => {
   const { colors } = useTheme();
+  const { currencySymbol } = useCurrency();
   const [type, setType] = useState<'credit_card' | 'personal_debt'>('credit_card');
   const [name, setName] = useState('');
   const [totalLimit, setTotalLimit] = useState('');
@@ -172,7 +174,7 @@ export const AddLiabilityModal: React.FC<AddLiabilityModalProps> = ({ visible, o
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.text.primary }]}>Güncel Borç</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
-                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>{currencySymbol}</Text>
                 <TextInput
                   style={[styles.input, { color: colors.text.primary }]}
                   value={currentDebt}
@@ -190,7 +192,7 @@ export const AddLiabilityModal: React.FC<AddLiabilityModalProps> = ({ visible, o
                 <View style={styles.section}>
                   <Text style={[styles.label, { color: colors.text.primary }]}>Toplam Limit</Text>
                   <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                    <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>{currencySymbol}</Text>
                     <TextInput
                       style={[styles.input, { color: colors.text.primary }]}
                       value={totalLimit}

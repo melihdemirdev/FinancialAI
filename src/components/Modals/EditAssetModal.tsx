@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Wallet, TrendingUp, Check } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { gradients } from '../../theme/colors';
 import { Asset } from '../../types';
 
@@ -25,6 +26,7 @@ interface EditAssetModalProps {
 
 export const EditAssetModal: React.FC<EditAssetModalProps> = ({ visible, onClose, asset, onUpdate }) => {
   const { colors } = useTheme();
+  const { currencySymbol } = useCurrency();
   const [type, setType] = useState<'liquid' | 'term' | 'gold_currency' | 'funds'>('liquid');
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
@@ -166,7 +168,7 @@ export const EditAssetModal: React.FC<EditAssetModalProps> = ({ visible, onClose
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.text.primary }]}>Tutar</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
-                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>₺</Text>
+                <Text style={[styles.currencyPrefix, { color: colors.text.tertiary }]}>{currencySymbol}</Text>
                 <TextInput
                   style={[styles.input, { color: colors.text.primary }]}
                   value={value}
