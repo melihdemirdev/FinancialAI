@@ -71,16 +71,25 @@ export const InstallmentsScreen = () => {
         {/* Hero Card */}
         <View style={styles.heroCardContainer}>
           <LinearGradient
-            colors={['#EC4899', '#A855F7']}
+            colors={['#EC4899', '#A855F7', '#9333EA']}
             style={styles.heroCard}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
+            {/* Işık Hüzmeleri */}
+            <View style={styles.lightBeam1} />
+            <View style={styles.lightBeam2} />
+            <View style={styles.lightBeam3} />
+
+            {/* Glow Circles */}
+            <View style={styles.glowCircle1} />
+            <View style={styles.glowCircle2} />
+
             <View style={styles.heroContent}>
               <View style={styles.heroIconContainer}>
                 <TrendingDown size={24} color="rgba(255, 255, 255, 0.95)" strokeWidth={2.5} />
               </View>
-              <View>
+              <View style={styles.heroTextArea}>
                 <Text style={styles.heroLabel}>Aylık Ödeme</Text>
                 <Text style={styles.heroValue}>
                   {formatCurrency(totalMonthlyPayment, currencySymbol)}
@@ -286,41 +295,112 @@ const styles = StyleSheet.create({
 
   // Hero Card
   heroCardContainer: {
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#EC4899',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
   },
   heroCard: {
-    padding: 24,
+    padding: 28,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  // Işık Hüzmeleri
+  lightBeam1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 100,
+    top: -100,
+    right: -50,
+    transform: [{ rotate: '45deg' }],
+  },
+  lightBeam2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 75,
+    bottom: -75,
+    left: -40,
+    transform: [{ rotate: '-30deg' }],
+  },
+  lightBeam3: {
+    position: 'absolute',
+    width: 100,
+    height: 300,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    top: -50,
+    left: '30%',
+    transform: [{ rotate: '20deg' }],
+  },
+  glowCircle1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(236, 72, 153, 0.3)',
+    top: -40,
+    right: -30,
+    shadowColor: '#EC4899',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+  },
+  glowCircle2: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    bottom: -20,
+    left: 20,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 10,
   },
   heroIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  heroTextArea: {
+    flex: 1,
   },
   heroLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 4,
-    fontWeight: '600',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: 6,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   heroValue: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 
   // List

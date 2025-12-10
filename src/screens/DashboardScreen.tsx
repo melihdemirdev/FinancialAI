@@ -398,7 +398,12 @@ export const DashboardScreen = () => {
           let cleaned = item.trim();
 
           // Kalın yazı işaretlerini temizle (başlangıç kısmında varsa)
-          cleaned = cleaned.replace(/^\*\*([^*]+)\*\*:?\s*/, '$1: ');
+          // Eğer zaten : varsa sadece ** kaldır, yoksa : ekle
+          if (cleaned.match(/^\*\*([^*]+)\*\*:\s*/)) {
+            cleaned = cleaned.replace(/^\*\*([^*]+)\*\*:\s*/, '$1: ');
+          } else {
+            cleaned = cleaned.replace(/^\*\*([^*]+)\*\*\s*/, '$1: ');
+          }
 
           return cleaned;
         })
@@ -709,7 +714,7 @@ export const DashboardScreen = () => {
               </View>
               <Text style={[styles.aiTitle, { color: colors.text.primary }]}>Yapay CFO Analizi</Text>
             </View>
-            <Text style={[styles.aiSubtitle, { color: colors.text.secondary }]}>
+            <Text style={[styles.aiSubtitle, { color: colors.text.primary }]}>
               {aiResult ? "Son analiziniz aşağıda. Yeni analiz için tıklayın." : "Gemini'den kısa bir CFO yorumu al."}
             </Text>
             <TouchableOpacity
@@ -761,7 +766,7 @@ export const DashboardScreen = () => {
                         <Markdown
                           style={{
                             body: {
-                              color: colors.text.secondary,
+                              color: colors.text.primary,
                               fontSize: 13,
                               lineHeight: 18
                             },
@@ -789,7 +794,7 @@ export const DashboardScreen = () => {
                         <Markdown
                           style={{
                             body: {
-                              color: colors.text.secondary,
+                              color: colors.text.primary,
                               fontSize: 13,
                               lineHeight: 18
                             },
@@ -813,7 +818,7 @@ export const DashboardScreen = () => {
                   <Markdown
                     style={{
                       body: {
-                        color: colors.text.secondary,
+                        color: colors.text.primary,
                         fontSize: 13,
                         lineHeight: 18
                       },

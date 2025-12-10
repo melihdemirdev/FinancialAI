@@ -489,7 +489,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
       <View style={[styles.progressBar, { backgroundColor: `${color}20` }]}>
         <View style={[styles.progressFill, { width: `${score}%`, backgroundColor: color }]} />
       </View>
-      <Text style={[styles.categoryDesc, { color: colors.text.secondary }]}>{description}</Text>
+      <Text style={[styles.categoryDesc, { color: colors.text.primary }]}>{description}</Text>
     </View>
   );
 
@@ -562,7 +562,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
               <Markdown
                 style={{
                   body: {
-                    color: colors.text.secondary,
+                    color: colors.text.primary,
                     fontSize: 15,
                     lineHeight: 24,
                     marginBottom: 0
@@ -576,7 +576,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                     marginBottom: 8
                   },
                   text: {
-                    color: colors.text.secondary
+                    color: colors.text.primary
                   }
                 }}
               >
@@ -642,7 +642,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                   <View style={{ flex: 1 }}>
                     <Markdown
                       style={{
-                        body: { color: colors.text.secondary, fontSize: 14, lineHeight: 20 },
+                        body: { color: colors.text.primary, fontSize: 14, lineHeight: 20 },
                         strong: { color: colors.text.primary, fontWeight: '700' },
                         paragraph: { marginTop: 0, marginBottom: 0 },
                       }}
@@ -675,7 +675,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                   <View style={{ flex: 1 }}>
                     <Markdown
                       style={{
-                        body: { color: colors.text.secondary, fontSize: 14, lineHeight: 20 },
+                        body: { color: colors.text.primary, fontSize: 14, lineHeight: 20 },
                         strong: { color: colors.text.primary, fontWeight: '700' },
                         paragraph: { marginTop: 0, marginBottom: 0 },
                       }}
@@ -695,7 +695,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
             </Text>
             <View style={[styles.metricsCard, { backgroundColor: colors.cardBackground }]}>
               <View style={styles.metricRow}>
-                <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                   Toplam Varlıklar
                 </Text>
                 <Text style={[styles.metricValue, { color: colors.success }]}>
@@ -704,7 +704,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
               </View>
               <View style={styles.metricDivider} />
               <View style={styles.metricRow}>
-                <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                   Toplam Borçlar
                 </Text>
                 <Text style={[styles.metricValue, { color: colors.error }]}>
@@ -713,7 +713,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
               </View>
               <View style={styles.metricDivider} />
               <View style={styles.metricRow}>
-                <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>Net Değer</Text>
+                <Text style={[styles.metricLabel, { color: colors.text.primary }]}>Net Değer</Text>
                 <Text
                   style={[
                     styles.metricValue,
@@ -725,7 +725,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
               </View>
               <View style={styles.metricDivider} />
                <View style={styles.metricRow}>
-                <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                   Güvenli Harcama
                 </Text>
                 <Text style={[styles.metricValue, { color: colors.purple.light }]}>
@@ -737,7 +737,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                 <>
                   <View style={styles.metricDivider} />
                   <View style={styles.metricRow}>
-                    <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                    <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                       Aylık Maaş
                     </Text>
                     <Text style={[styles.metricValue, { color: colors.text.primary }]}>
@@ -750,7 +750,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                 <>
                   <View style={styles.metricDivider} />
                   <View style={styles.metricRow}>
-                    <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                    <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                       Ek Gelir
                     </Text>
                     <Text style={[styles.metricValue, { color: colors.text.primary }]}>
@@ -763,7 +763,7 @@ export const CFOReportModal: React.FC<CFOReportModalProps> = ({
                 <>
                   <View style={styles.metricDivider} />
                   <View style={styles.metricRow}>
-                    <Text style={[styles.metricLabel, { color: colors.text.secondary }]}>
+                    <Text style={[styles.metricLabel, { color: colors.text.primary }]}>
                       Findeks Notu
                     </Text>
                     <Text style={[styles.metricValue, { color: colors.text.primary }]}>
