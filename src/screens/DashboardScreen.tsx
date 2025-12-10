@@ -483,16 +483,52 @@ export const DashboardScreen = () => {
           />
         }
       >
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={[styles.greeting, { color: colors.text.tertiary }]}>Hoş Geldiniz</Text>
-              <Text style={[styles.title, { color: colors.text.primary }]}>Finansal Özet</Text>
+        <View style={styles.modernHeader}>
+          <LinearGradient
+            colors={['#FF0080', '#7928CA', '#0070F3', '#00DFD8']}
+            style={styles.headerGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.decorativePattern}>
+              <View style={styles.patternCircle1} />
+              <View style={styles.patternCircle2} />
+              <View style={styles.patternCircle3} />
             </View>
-            <View style={[styles.headerIcon, { backgroundColor: "rgba(147, 51, 234, 0.15)" }]}>
-              <Wallet size={28} color={colors.purple.light} strokeWidth={2} />
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <View style={styles.headerTextContainer}>
+                  <Text style={styles.greeting}>
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour >= 6 && hour < 12) return '🌅 Günaydın';
+                      if (hour >= 12 && hour < 18) return '☀️ İyi Günler';
+                      if (hour >= 18 && hour < 24) return '🌙 İyi Akşamlar';
+                      return '🌙 İyi Geceler';
+                    })()}
+                  </Text>
+                  <Text style={styles.title}>
+                    {profile.name || 'Finansal Özet'}
+                  </Text>
+                  <View style={styles.dateContainer}>
+                    <Text style={styles.dateText}>
+                      {new Date().toLocaleDateString('tr-TR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.headerRight}>
+                <View style={styles.modernHeaderIcon}>
+                  <Wallet size={34} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </View>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         <Pressable onPress={handleHeroPress} style={styles.heroCardContainer}>
@@ -830,36 +866,129 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 100,
   },
-  header: {
+  modernHeader: {
     marginBottom: 32,
-    paddingTop: 20,
+    marginHorizontal: -24,
+    marginTop: -24,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
-  headerTop: {
+  headerGradient: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 36,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  decorativePattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  patternCircle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -80,
+    right: -60,
+  },
+  patternCircle2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    bottom: -50,
+    left: -40,
+  },
+  patternCircle3: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    top: 50,
+    left: '40%',
+  },
+  neonLine1: {
+    position: 'absolute',
+    width: '60%',
+    height: 2,
+    backgroundColor: 'rgba(0, 223, 216, 0.4)',
+    top: 30,
+    right: 0,
+    shadowColor: '#00DFD8',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+  },
+  neonLine2: {
+    position: 'absolute',
+    width: '40%',
+    height: 2,
+    backgroundColor: 'rgba(255, 0, 128, 0.4)',
+    bottom: 40,
+    left: 0,
+    shadowColor: '#FF0080',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+  },
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    zIndex: 10,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTextContainer: {
+    gap: 6,
+  },
+  headerRight: {
+    marginLeft: 16,
   },
   greeting: {
-    fontSize: 15,
-    marginBottom: 8,
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: 0.3,
+    color: 'rgba(255, 255, 255, 0.95)',
   },
   title: {
-    fontSize: 36,
-    fontWeight: "800",
-    letterSpacing: -0.5,
+    fontSize: 34,
+    fontWeight: "900",
+    letterSpacing: -0.8,
+    marginBottom: 8,
+    color: '#FFFFFF',
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  dateContainer: {
+    marginTop: 4,
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  modernHeaderIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#9333EA",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
   },
   heroCardContainer: {
     marginBottom: 28,
