@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { gradients } from '../theme/colors';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, ArrowLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../config/supabase';
 
 export const RegisterScreen = () => {
   const { colors } = useTheme();
@@ -57,20 +58,42 @@ export const RegisterScreen = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      Alert.alert(
-        'Kayıt Başarılı!',
-        'Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.',
-        [
-          {
-            text: 'Tamam',
-            onPress: () => navigation.goBack(),
+    try {
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
           },
-        ]
-      );
-    }, 1500);
+        },
+      });
+
+      if (error) {
+        console.error('Registration error:', error);
+        Alert.alert('Kayıt Hatası', error.message || 'Hesap oluşturulurken bir hata oluştu.');
+        return;
+      }
+
+      if (data.user) {
+        Alert.alert(
+          'Kayıt Başarılı!',
+          'Hesabınız oluşturuldu. E-posta adresinizi doğruladıktan sonra giriş yapabilirsiniz.',
+          [
+            {
+              text: 'Tamam',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Kayıt Hatası', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {

@@ -16,6 +16,7 @@ import { useCustomAlert } from '../hooks/useCustomAlert';
 import { ArrowLeft, Bell, Clock, TrendingUp, Calendar, DollarSign, Send } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
+import { gradients } from '../theme/colors';
 
 export const NotificationSettingsScreen = ({ navigation }: any) => {
   const { colors } = useTheme();
@@ -128,26 +129,26 @@ export const NotificationSettingsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-      {/* Header with Gradient Background */}
       <LinearGradient
-        colors={[colors.purple.primary, colors.purple.secondary]}
+        colors={gradients.purple}
         style={styles.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
-              <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Bell size={24} color="#FFFFFF" strokeWidth={2.5} />
-              <Text style={styles.headerTitle}>Bildirimler</Text>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <View style={styles.backButtonCircle}>
+              <ArrowLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
             </View>
-            <View style={{ width: 40 }} />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.subtitle}>Ayarlar</Text>
+            <Text style={styles.screenTitle}>Bildirimler</Text>
           </View>
+          <View style={styles.headerIcon}>
+            <Bell size={22} color="#FFFFFF" strokeWidth={2} />
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView
@@ -362,17 +363,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Header Styles
   headerGradient: {
-    width: '100%',
+    shadowColor: '#9333EA',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   header: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     justifyContent: 'space-between',
   },
   backButton: {
+    marginRight: 8,
+  },
+  backButtonCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -380,23 +390,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitleContainer: {
-    flexDirection: 'row',
+  headerTextContainer: {
+    flex: 1,
     alignItems: 'center',
-    gap: 8,
   },
-  headerTitle: {
-    fontSize: 20,
+  subtitle: {
+    fontSize: 12,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  screenTitle: {
+    fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 100,
   },
   section: {

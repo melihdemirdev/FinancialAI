@@ -33,7 +33,7 @@ export const SettingsScreen = () => {
   const { theme, toggleTheme, colors } = useTheme();
   const { currency, currencySymbol } = useCurrency();
   const { profile } = useProfile();
-  const { isGuest, logout } = useAuth();
+  const { isGuest, user, logout } = useAuth();
   const { showAlert, AlertComponent } = useCustomAlert();
   const {
     clearAllData,
@@ -543,7 +543,9 @@ export const SettingsScreen = () => {
             end={{ x: 1, y: 1 }}
           >
             <View style={styles.avatar}>
-              {profile.profileImage ? (
+              {user?.user_metadata?.picture ? (
+                <Image source={{ uri: user.user_metadata.picture }} style={styles.avatarImage} />
+              ) : profile.profileImage ? (
                 <Image source={{ uri: profile.profileImage }} style={styles.avatarImage} />
               ) : (
                 <User size={36} color="#FFFFFF" strokeWidth={2} />
@@ -551,10 +553,14 @@ export const SettingsScreen = () => {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>
-                {isGuest ? 'Misafir Kullanıcı' : profile.name || 'Kullanıcı'}
+                {isGuest
+                  ? 'Misafir Kullanıcı'
+                  : user?.user_metadata?.full_name || user?.user_metadata?.name || profile.name || 'Kullanıcı'}
               </Text>
               <Text style={styles.profileEmail}>
-                {isGuest ? 'Misafir modunda' : profile.email || 'E-posta ekleyin'}
+                {isGuest
+                  ? 'Misafir modunda'
+                  : user?.email || profile.email || 'E-posta ekleyin'}
               </Text>
             </View>
           </LinearGradient>

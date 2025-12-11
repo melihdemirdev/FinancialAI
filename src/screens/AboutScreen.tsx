@@ -26,21 +26,28 @@ export const AboutScreen = ({ onBack }: AboutScreenProps) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-      {/* Modern Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <View style={[styles.backButtonCircle, { backgroundColor: colors.cardBackground }]}>
-            <ArrowLeft size={24} color={colors.text.primary} strokeWidth={2.5} />
+      {/* Modern Header with Gradient */}
+      <LinearGradient
+        colors={gradients.purple}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <View style={styles.backButtonCircle}>
+              <ArrowLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+            </View>
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.subtitle}>Uygulama</Text>
+            <Text style={styles.screenTitle}>Hakkında</Text>
           </View>
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={[styles.subtitle, { color: colors.text.tertiary }]}>Uygulama</Text>
-          <Text style={[styles.screenTitle, { color: colors.text.primary }]}>Hakkında</Text>
+          <View style={styles.headerIcon}>
+            <Info size={22} color="#FFFFFF" strokeWidth={2} />
+          </View>
         </View>
-        <View style={[styles.headerIcon, { backgroundColor: 'rgba(147, 51, 234, 0.15)' }]}>
-          <Info size={28} color={colors.purple.light} strokeWidth={2} />
-        </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero Card */}
@@ -188,53 +195,57 @@ const styles = StyleSheet.create({
   },
 
   // Header Styles
+  headerGradient: {
+    shadowColor: '#9333EA',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     justifyContent: 'space-between',
   },
   backButton: {
-    marginRight: 12,
+    marginRight: 8,
   },
   backButtonCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   headerTextContainer: {
     flex: 1,
+    alignItems: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 12,
+    marginBottom: 2,
     letterSpacing: 0.5,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
   },
   screenTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.5,
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#9333EA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
   },
 
   // Content
@@ -248,6 +259,7 @@ const styles = StyleSheet.create({
   heroCardContainer: {
     borderRadius: 24,
     overflow: 'hidden',
+    marginTop: 24,
     marginBottom: 32,
     shadowColor: '#9333EA',
     shadowOffset: { width: 0, height: 8 },

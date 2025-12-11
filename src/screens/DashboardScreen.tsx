@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Animated,
   Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import Markdown from 'react-native-markdown-display';
@@ -28,7 +29,7 @@ export const DashboardScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiResult, setAiResult] = useState<{
+  const [aiResult, setAiResult] = useState<{ 
     summary: string;
     risks: string[];
     actions: string[];
@@ -364,12 +365,12 @@ export const DashboardScreen = () => {
         if (!line) continue;
 
         // Ana başlıkları atla (**Kısa Vade:**, **Orta Vade:** gibi)
-        if (line.match(/^\*\*[A-Za-zÇçĞğİıÖöŞşÜü\s]+(\(\d+-?\d*\s*[a-z]*\))?:?\*\*$/)) {
+        if (line.match(/^\*\*.+?:?\*\*$/)) {
           continue;
         }
 
         // Yeni madde başlangıcı mı kontrol et (1. veya * veya - ile başlıyor mu?)
-        const isNewItem = line.match(/^[\*\-•]\s+/) || line.match(/^\d+\.\s+/);
+        const isNewItem = line.match(/^[\*\-\•]\s+/) || line.match(/^\d+\.\s+/);
 
         if (isNewItem) {
           // Önceki maddeyi kaydet
@@ -378,7 +379,7 @@ export const DashboardScreen = () => {
           }
 
           // Yeni maddeyi başlat - madde işareti/numarayı kaldır
-          currentItem = line.replace(/^[\*\-•]\s+/, '').replace(/^\d+\.\s+/, '');
+          currentItem = line.replace(/^[\*\-\•]\s+/, '').replace(/^\d+\.\s+/, '');
           inItem = true;
         } else if (inItem) {
           // Devam eden satır - mevcut maddeye ekle
@@ -415,7 +416,7 @@ export const DashboardScreen = () => {
           if (item.length < 10) return false;
 
           // Sadece noktalama işareti veya sayı içermemeli
-          if (item.match(/^[\d\s\.,;:\-–—]+$/)) return false;
+          if (item.match(/^[\d\s\.,;:\-\–—]+$/)) return false;
 
           return true;
         });
@@ -479,7 +480,7 @@ export const DashboardScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -541,7 +542,7 @@ export const DashboardScreen = () => {
 
         <Pressable onPress={handleHeroPress} style={styles.heroCardContainer}>
           <Animated.View
-            style={[
+            style={[ 
               styles.heroCardWrapper,
               {
                 transform: [
@@ -657,7 +658,7 @@ export const DashboardScreen = () => {
               </Text>
               <View style={[styles.analyticsBar, { backgroundColor: "rgba(147, 51, 234, 0.2)" }]}>
                 <View
-                  style={[
+                  style={[ 
                     styles.analyticsBarFill,
                     {
                       backgroundColor: colors.purple.primary,
@@ -680,7 +681,7 @@ export const DashboardScreen = () => {
               </Text>
               <View style={[styles.analyticsBar, { backgroundColor: "rgba(6, 182, 212, 0.2)" }]}>
                 <View
-                  style={[
+                  style={[ 
                     styles.analyticsBarFill,
                     {
                       backgroundColor: colors.accent.cyan,
@@ -825,7 +826,7 @@ export const DashboardScreen = () => {
           additionalIncome: profile.additionalIncome,
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -838,16 +839,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   modernHeader: {
-    marginBottom: 32,
-    marginHorizontal: -24,
-    marginTop: -24,
+    marginBottom: 24,
     overflow: 'hidden',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    borderRadius: 32,
   },
   headerGradient: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 24,
     paddingBottom: 36,
     position: 'relative',
     overflow: 'hidden',

@@ -24,7 +24,7 @@ interface LoginScreenProps {}
 
 export const LoginScreen: React.FC<LoginScreenProps> = () => {
   const { colors } = useTheme();
-  const { login, loginAsGuest } = useAuth();
+  const { login, loginWithGoogle, loginAsGuest } = useAuth();
   const { showAlert, AlertComponent } = useCustomAlert();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,11 +50,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         showAlert('Giriş Başarılı', 'Hoş geldiniz!', [{ text: 'Tamam' }], 'success');
       } else {
-        showAlert('Giriş Başarısız', 'Lütfen bilgilerinizi kontrol edin.', [{ text: 'Tamam' }], 'error');
+        showAlert('Giriş Başarısız', result.error || 'Lütfen bilgilerinizi kontrol edin.', [{ text: 'Tamam' }], 'error');
       }
     } catch (error) {
       showAlert('Giriş Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.', [{ text: 'Tamam' }], 'error');
@@ -83,11 +83,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
 
-    // Simulate Google login process
-    setTimeout(() => {
+    try {
+      const result = await loginWithGoogle();
+      if (result.success) {
+        showAlert('Giriş Başarılı', 'Google hesabınızla giriş yapıldı!', [{ text: 'Tamam' }], 'success');
+      } else {
+        if (result.error !== 'Google girişi iptal edildi.') {
+          showAlert('Giriş Başarısız', result.error || 'Google ile giriş yapılamadı.', [{ text: 'Tamam' }], 'error');
+        }
+      }
+    } catch (error) {
+      showAlert('Giriş Başarısız', 'Bir hata oluştu. Lütfen tekrar deneyin.', [{ text: 'Tamam' }], 'error');
+    } finally {
       setIsLoadingGoogle(false);
-      showAlert('Google ile Giriş', 'Google hesabınızla giriş yapıldı!', [{ text: 'Tamam' }], 'success');
-    }, 1000);
+    }
   };
 
   const handleForgotPassword = () => {

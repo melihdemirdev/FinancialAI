@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { gradients } from '../theme/colors';
 import { Mail, ArrowLeft, Send, CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../config/supabase';
 
 export const ForgotPasswordScreen = () => {
   const { colors } = useTheme();
@@ -38,11 +39,25 @@ export const ForgotPasswordScreen = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Send password reset email with Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'financialai://reset-password',
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        Alert.alert('Hata', error.message || 'Şifre sıfırlama e-postası gönderilemedi.');
+        return;
+      }
+
       setEmailSent(true);
-    }, 1500);
+    } catch (error) {
+      console.error('Password reset error:', error);
+      Alert.alert('Hata', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {

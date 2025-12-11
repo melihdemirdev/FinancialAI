@@ -14,65 +14,51 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProfile } from '../context/ProfileContext';
 import { useCustomAlert } from '../hooks/useCustomAlert';
+import { useAuth } from '../hooks/useAuth';
 import { ArrowLeft, User, Mail, Phone, Camera, Save, Scale, Banknote, TrendingUp } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useCurrency } from '../context/CurrencyContext'; // Import useCurrency
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Import useSafeAreaInsets
+import { useCurrency } from '../context/CurrencyContext';
+import { gradients } from '../theme/colors';
 
 export const ProfileSettingsScreen = ({ navigation }: any) => {
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
+  const { user } = useAuth();
   const { showAlert, AlertComponent } = useCustomAlert();
-  const { currencySymbol } = useCurrency(); // Get currencySymbol
-  const insets = useSafeAreaInsets(); // Get safe area insets
+  const { currencySymbol } = useCurrency();
 
-  const [name, setName] = useState(profile.name);
-  const [email, setEmail] = useState(profile.email);
+  const [name, setName] = useState(profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || '');
+  const [email, setEmail] = useState(profile.email || user?.email || '');
   const [phone, setPhone] = useState(profile.phone);
-  const [profileImage, setProfileImage] = useState(profile.profileImage);
+  const [profileImage, setProfileImage] = useState(profile.profileImage || user?.user_metadata?.picture || '');
   const [findeksScore, setFindeksScore] = useState(profile.findeksScore?.toString() || '');
   const [salary, setSalary] = useState(profile.salary?.toString() || '');
   const [additionalIncome, setAdditionalIncome] = useState(profile.additionalIncome?.toString() || '');
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({
-      cardStyle: { backgroundColor: colors.background }
-    });
-  }, [colors.background, navigation]);
-
-  useEffect(() => {
     const changed =
-      name !== profile.name ||
-      email !== profile.email ||
-      phone !== profile.phone ||
-      profileImage !== profile.profileImage ||
-      Number(findeksScore) !== (profile.findeksScore || 0) ||
-      Number(salary) !== (profile.salary || 0) ||
-      Number(additionalIncome) !== (profile.additionalIncome || 0);
+      name !== (profile.name || '') ||
+      phone !== (profile.phone || '') ||
+      profileImage !== (profile.profileImage || '') ||
+      (findeksScore ? Number(findeksScore) : undefined) !== profile.findeksScore ||
+      (salary ? Number(salary) : undefined) !== profile.salary ||
+      (additionalIncome ? Number(additionalIncome) : undefined) !== profile.additionalIncome;
     setHasChanges(changed);
-  }, [name, email, phone, profileImage, findeksScore, salary, additionalIncome, profile]);
+  }, [name, phone, profileImage, findeksScore, salary, additionalIncome, profile]);
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (status !== 'granted') {
-      showAlert(
-        'İzin Gerekli',
-        'Fotoğraf seçmek için galeri erişim izni gereklidir.',
-        [{ text: 'Tamam' }],
-        'warning'
-      );
+      showAlert('İzin Gerekli', 'Fotoğraf seçmek için galeri erişim izni gereklidir.', [{ text: 'Tamam' }], 'warning');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
     });
-
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
     }
@@ -80,23 +66,15 @@ export const ProfileSettingsScreen = ({ navigation }: any) => {
 
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
     if (status !== 'granted') {
-      showAlert(
-        'İzin Gerekli',
-        'Fotoğraf çekmek için kamera erişim izni gereklidir.',
-        [{ text: 'Tamam' }],
-        'warning'
-      );
+      showAlert('İzin Gerekli', 'Fotoğraf çekmek için kamera erişim izni gereklidir.', [{ text: 'Tamam' }], 'warning');
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
     });
-
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
     }
@@ -126,47 +104,38 @@ export const ProfileSettingsScreen = ({ navigation }: any) => {
         salary: salary ? Number(salary) : undefined,
         additionalIncome: additionalIncome ? Number(additionalIncome) : undefined,
       });
-
-      showAlert(
-        'Başarılı',
-        'Profil bilgileriniz güncellendi.',
-        [{ text: 'Tamam', onPress: () => navigation.goBack() }],
-        'success'
-      );
+      showAlert('Başarılı', 'Profil bilgileriniz güncellendi.', [{ text: 'Tamam' }], 'success');
+      setHasChanges(false);
     } catch (error) {
-      showAlert(
-        'Hata',
-        'Profil güncellenirken bir hata oluştu.',
-        [{ text: 'Tamam' }],
-        'error'
-      );
+      showAlert('Hata', 'Profil güncellenirken bir hata oluştu.', [{ text: 'Tamam' }], 'error');
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header with Gradient Background */}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       <LinearGradient
-        colors={[colors.purple.primary, colors.purple.secondary]}
+        colors={gradients.purple}
         style={styles.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={[styles.header, { paddingTop: insets.top + -10 }]}>
-            <View style={styles.headerContent}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-              >
-                <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Profil Ayarları</Text>
-              <View style={{ width: 40 }} />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <View style={styles.backButtonCircle}>
+              <ArrowLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
             </View>
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.subtitle}>Kullanıcı</Text>
+            <Text style={styles.screenTitle}>Profil Ayarları</Text>
           </View>
+          <View style={styles.headerIcon}>
+            <User size={22} color="#FFFFFF" strokeWidth={2} />
+          </View>
+        </View>
       </LinearGradient>
 
-      <ScrollView style={[styles.content, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Image */}
         <View style={styles.imageSection}>
           <TouchableOpacity onPress={handleImageOptions} style={styles.imageContainer}>
@@ -205,16 +174,21 @@ export const ProfileSettingsScreen = ({ navigation }: any) => {
 
           {/* Email */}
           <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text.primary }]}>E-posta</Text>
-            <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.labelRow}>
+              <Text style={[styles.label, { color: colors.text.primary }]}>E-posta</Text>
+              <Text style={[styles.labelHint, { color: colors.text.tertiary }]}>
+                (Değiştirilemez)
+              </Text>
+            </View>
+            <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground, opacity: 0.6 }]}>
               <Mail size={20} color={colors.text.tertiary} strokeWidth={2} />
               <TextInput
-                style={[styles.input, { color: colors.text.primary }]}
+                style={[styles.input, { color: colors.text.secondary }]}
                 value={email}
-                onChangeText={setEmail}
                 placeholder="ornek@email.com"
                 placeholderTextColor={colors.text.tertiary}
                 keyboardType="email-address"
+                editable={false}
                 autoCapitalize="none"
               />
             </View>
@@ -236,7 +210,7 @@ export const ProfileSettingsScreen = ({ navigation }: any) => {
             </View>
           </View>
 
-           {/* Findeks Score */}
+          {/* Findeks Score */}
           <View style={styles.section}>
             <Text style={[styles.label, { color: colors.text.primary }]}>Findeks Puanı</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground }]}>
@@ -290,7 +264,7 @@ export const ProfileSettingsScreen = ({ navigation }: any) => {
 
       {/* Save Button */}
       {hasChanges && (
-        <View style={[styles.saveButtonContainer, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
+        <View style={[styles.saveButtonContainer, { backgroundColor: colors.background, paddingBottom: 20 }]}>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <LinearGradient
               colors={[colors.purple.primary, colors.purple.secondary]}
@@ -315,19 +289,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Header Styles
   headerGradient: {
-    width: '100%',
+    shadowColor: '#9333EA',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   header: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     justifyContent: 'space-between',
   },
   backButton: {
+    marginRight: 8,
+  },
+  backButtonCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -335,11 +316,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 20,
+  headerTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  subtitle: {
+    fontSize: 12,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  screenTitle: {
+    fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
@@ -368,16 +369,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cameraButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
     right: 0,
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 3,
-    borderColor: "#FFFFFF",
+    borderColor: '#FFFFFF',
   },
   imageHint: {
     fontSize: 13,
@@ -392,18 +393,28 @@ const styles = StyleSheet.create({
   section: {
     gap: 10,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   label: {
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  labelHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 8, // Changed from 4 to 8
-    gap: 10, // Changed from 12 to 10
+    paddingVertical: 8,
+    gap: 10,
   },
   input: {
     flex: 1,
@@ -420,6 +431,7 @@ const styles = StyleSheet.create({
   // Save Button
   saveButtonContainer: {
     position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
