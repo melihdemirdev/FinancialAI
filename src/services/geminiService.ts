@@ -22,14 +22,101 @@ export interface SpellCheckResponse {
 export class GeminiService {
   private apiKey: string;
   private endpoint: string;
+  private groqApiKey: string;
+  private groqEndpoint: string;
 
   constructor() {
     this.apiKey = AI_CONFIG.gemini.apiKey;
     this.endpoint = AI_CONFIG.gemini.endpoint;
+    this.groqApiKey = AI_CONFIG.groq.apiKey;
+    this.groqEndpoint = AI_CONFIG.groq.endpoint;
   }
 
   getModel(): string {
     return AI_CONFIG.gemini.model;
+  }
+
+  isGroqConfigured(): boolean {
+    return this.groqApiKey !== 'YOUR_GROQ_API_KEY_HERE' && this.groqApiKey.length > 0;
+  }
+
+  private async generateContentWithGroq(prompt: string): Promise<GeminiResponse> {
+    if (!this.isGroqConfigured()) {
+      return {
+        success: false,
+        error: 'GROQ_NOT_CONFIGURED',
+      };
+    }
+
+    const modelsToTry = [AI_CONFIG.groq.model, ...(AI_CONFIG.groq.fallbackModels || [])];
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const model = modelsToTry[i];
+
+      try {
+        const response = await fetch(this.groqEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.groqApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: AI_CONFIG.groq.maxTokens,
+            top_p: 0.95,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+
+          if (response.status === 429) {
+            throw new Error('RATE_LIMIT');
+          }
+
+          throw new Error(`HTTP ${response.status}: ${errorData?.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          const generatedText = data.choices[0].message.content;
+          return {
+            success: true,
+            content: generatedText.trim(),
+          };
+        } else {
+          throw new Error('İçerik oluşturulamadı');
+        }
+      } catch (error: any) {
+        console.error(`Groq ${model} hatası:`, error);
+
+        if (error.message === 'RATE_LIMIT' && i < modelsToTry.length - 1) {
+          console.log(`Groq rate limit, sonraki modeli deniyorum...`);
+          await this.delay(1000);
+          continue;
+        }
+
+        if (i === modelsToTry.length - 1) {
+          return {
+            success: false,
+            error: error.message || 'Groq başarısız oldu',
+          };
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Tüm Groq modelleri başarısız oldu',
+    };
   }
 
   async generateContentWithTitle(prompt: string): Promise<ContentGenerationResponse> {
@@ -113,6 +200,20 @@ CONTENT:
   }
 
   async generateContent(prompt: string): Promise<GeminiResponse> {
+    // Önce Groq dene (daha hızlı ve cömert rate limit)
+    if (this.isGroqConfigured()) {
+      console.log('🚀 Groq ile deneniyor...');
+      const groqResponse = await this.generateContentWithGroq(prompt);
+
+      if (groqResponse.success) {
+        console.log('✅ Groq başarılı!');
+        return groqResponse;
+      }
+
+      console.log('⚠️ Groq başarısız, Gemini\'ye geçiliyor...', groqResponse.error);
+    }
+
+    // Groq başarısız veya yapılandırılmamışsa Gemini'ye düş
     if (!this.isConfigured()) {
       return {
         success: false,
@@ -120,6 +221,7 @@ CONTENT:
       };
     }
 
+    console.log('🔮 Gemini ile deneniyor...');
     const modelsToTry = [AI_CONFIG.gemini.model, ...(AI_CONFIG.gemini.fallbackModels || [])];
 
     for (let i = 0; i < modelsToTry.length; i++) {
@@ -479,6 +581,8 @@ ${personalInfo}
 - Jargon yerine sade Türkçe tercih et
 - Raporu TAM ve EKSİKSİZ olarak tamamla
 - Her bölümü detaylı bir şekilde doldur
+- ASLA başlık sonuna çift iki nokta (::) koyma, sadece tek iki nokta (:) kullan
+- Örnek: "**Varlık Yapısı:**" şeklinde ("::" DEĞİL!)
 `;
 
     return this.generateContent(prompt);

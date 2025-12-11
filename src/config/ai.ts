@@ -1,9 +1,16 @@
 export const AI_CONFIG = {
+  groq: {
+    apiKey: process.env.EXPO_PUBLIC_GROQ_API_KEY || 'YOUR_GROQ_API_KEY_HERE',
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.1-70b-versatile', // En iyi Türkçe model
+    fallbackModels: ['mixtral-8x7b-32768'],
+    maxTokens: 8000,
+  },
   gemini: {
     apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta',
     model: 'gemini-2.5-flash',
-    fallbackModels: ['gemini-2.0-flash', 'gemini-2.0-flash-001'],
+    fallbackModels: ['gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-2.0-flash-001'],
     retryAttempts: 0, // Rate limit doluysa retry yapma
     retryDelay: 5000,
   },

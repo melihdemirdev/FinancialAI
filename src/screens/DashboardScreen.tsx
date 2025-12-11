@@ -405,6 +405,9 @@ export const DashboardScreen = () => {
             cleaned = cleaned.replace(/^\*\*([^*]+)\*\*\s*/, '$1: ');
           }
 
+          // Tüm :: durumlarını : ile değiştir (nereden gelirse gelsin)
+          cleaned = cleaned.replace(/::/g, ':');
+
           return cleaned;
         })
         .filter(item => {
